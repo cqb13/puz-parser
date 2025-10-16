@@ -9,7 +9,7 @@ type Puzzle struct {
 	Author    string
 	Copyright string
 	Clues     []string
-	metadata  metadata
+	Metadata  metadata
 }
 
 type metadata struct {
