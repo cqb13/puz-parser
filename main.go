@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	fp, err := os.Open("test.puz")
+	fp, err := os.Open("testing.puz")
 	if err != nil {
 		panic(err)
 	}

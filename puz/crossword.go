@@ -4,7 +4,8 @@ type Puzzle struct {
 	Width     uint8
 	Height    uint8
 	NumClues  uint16
-	Board     [][]string
+	Solution  [][]string
+	State     [][]string
 	Title     string
 	Author    string
 	Copyright string

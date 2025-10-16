@@ -2,63 +2,248 @@ package puz
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"strings"
 )
 
 const file_magic = "ACROSS&DOWN"
 
+type checksums struct {
+	checksum           uint16
+	cibChecksum        uint16
+	maskedLowChecksum  [4]byte
+	maskedHighChecksum [4]byte
+}
+
+type ByteReader struct {
+	bytes  []byte
+	offset int
+}
+
+func NewByteReader(bytes []byte) ByteReader {
+	return ByteReader{
+		bytes,
+		0,
+	}
+}
+
+func (r *ByteReader) Read(amount int) ([]byte, error) {
+	if r.offset+amount > len(r.bytes) {
+		return nil, errors.New("Out of bounds")
+	}
+
+	start := r.offset
+	r.offset += amount
+	return r.bytes[start:r.offset], nil
+}
+
+func (r *ByteReader) ReadByte() (byte, error) {
+	b, err := r.Read(1)
+	if err != nil {
+		return 0, err
+	}
+	return b[0], nil
+}
+
+func (r *ByteReader) Len() int {
+	return len(r.bytes)
+}
+
+func (r *ByteReader) ReadShort() (uint16, error) {
+	b, err := r.Read(2)
+	if err != nil {
+		return 0, err
+	}
+	return parseShort(b), nil
+}
+
+func (r *ByteReader) Step() {
+	r.offset += 1
+}
+
+func (r *ByteReader) SetOffset(offset int) error {
+	if offset < 0 || offset > len(r.bytes) {
+		return errors.New("invalid offset")
+	}
+
+	r.offset = offset
+	return nil
+}
+
 func LoadPuz(bytes []byte) (*Puzzle, error) {
 	var puzzle Puzzle
 
-	err := parseHeader(bytes, &puzzle)
+	reader := NewByteReader(bytes)
+
+	foundChecksums, err := parseHeader(&reader, &puzzle)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read header: %s", err)
 	}
 
-	return nil, nil
-}
-
-func parseHeader(bytes []byte, puzzle *Puzzle) error {
-	if len(bytes) < 51 {
-		return fmt.Errorf("Not enough data, expected header length of 51 bytes, found %d", len(bytes))
-	}
-
-	checksum := parseShort(bytes[:2])
-	fileMagic := bytes[2:13]
-
-	if string(fileMagic) != file_magic {
-		return fmt.Errorf("Unexpected file magic, expected ACROSS&DOWN, found %s", string(fileMagic))
+	err = parseSolutionAndState(&reader, &puzzle)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read board and state: %s", err)
 	}
 
 	//TODO: validate checksums
-	cibChecksum := parseShort(bytes[14:16])
-	maskedLowChecksum := bytes[16:20]
-	maskedHighChecksum := bytes[20:24]
 
-	version := string(bytes[24:27])
-	puzzle.Metadata.Version = version
+	expectedCibChecksum := checksumRegion(bytes[44:52])
 
-	scrambledChecksum := parseShort(bytes[30:32])
+	if foundChecksums.cibChecksum != expectedCibChecksum {
+		return nil, fmt.Errorf("CIB Checksum mismatch, expected %d, found %d", expectedCibChecksum, foundChecksums.cibChecksum)
+	}
+
+	_ = foundChecksums
+
+	return nil, nil
+}
+
+func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
+	if reader.Len() < 51 {
+		return nil, fmt.Errorf("Not enough data, expected header length of 51 bytes, found %d", reader.Len())
+	}
+
+	checksum, err := reader.ReadShort()
+	if err != nil {
+		return nil, err
+	}
+	fileMagic, err := reader.Read(11)
+	if err != nil {
+		return nil, err
+	}
+	reader.Step() // skips the null terminator on fileMagic str
+
+	if string(fileMagic) != file_magic {
+		return nil, fmt.Errorf("Unexpected file magic, expected ACROSS&DOWN, found %s", string(fileMagic))
+	}
+
+	cibChecksum, err := reader.ReadShort()
+	if err != nil {
+		return nil, err
+	}
+
+	maskedLowChecksum, err := reader.Read(4)
+	if err != nil {
+		return nil, err
+	}
+	maskedHighChecksum, err := reader.Read(4)
+	if err != nil {
+		return nil, err
+	}
+
+	version, err := reader.Read(3)
+	if err != nil {
+		return nil, err
+	}
+	puzzle.Metadata.Version = string(version)
+
+	// skips reserved space, not used in most files
+	reader.Step()
+	reader.Step()
+
+	scrambledChecksum, err := reader.ReadShort()
+	if err != nil {
+		return nil, err
+	}
 	puzzle.Metadata.ScrambledChecksum = scrambledChecksum
 
-	width := bytes[44]
-	height := bytes[45]
+	// skips space, not sure why
+	reader.SetOffset(44)
+	width, err := reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+	height, err := reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
 	puzzle.Width = width
 	puzzle.Height = height
 
-	clueCount := parseShort(bytes[46:48])
+	clueCount, err := reader.ReadShort()
+	if err != nil {
+		return nil, err
+	}
 	puzzle.NumClues = clueCount
 
-	bitmask := parseShort(bytes[48:50])
+	bitmask, err := reader.ReadShort()
+	if err != nil {
+		return nil, err
+	}
 	puzzle.Metadata.Bitmask = bitmask
 
-	scrambledTag := parseShort(bytes[50:52])
+	scrambledTag, err := reader.ReadShort()
+	if err != nil {
+		return nil, err
+	}
 	puzzle.Metadata.ScrambledTag = scrambledTag
 
-	_, _, _, _ = checksum, cibChecksum, maskedLowChecksum, maskedHighChecksum
+	foundChecksums := checksums{
+		checksum,
+		cibChecksum,
+		[4]byte(maskedLowChecksum),
+		[4]byte(maskedHighChecksum),
+	}
+
+	return &foundChecksums, nil
+}
+
+func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
+	expectedLen := reader.offset + int((puzzle.Width*puzzle.Height)*2)
+
+	if expectedLen > reader.Len() {
+		return fmt.Errorf("Not enough data, expected at least %d bytes, found %d bytes", expectedLen, reader.Len())
+	}
+
+	solution, err := parseBoard(reader, int(puzzle.Width), int(puzzle.Height))
+	if err != nil {
+		return err
+	}
+
+	state, err := parseBoard(reader, int(puzzle.Width), int(puzzle.Height))
+	if err != nil {
+		return err
+	}
+
+	puzzle.Solution = solution
+	puzzle.State = state
+
 	return nil
+}
+
+func parseBoard(reader *ByteReader, width int, height int) ([][]string, error) {
+	var board [][]string
+
+	for range height {
+		bytes, err := reader.Read(width)
+		if err != nil {
+			return nil, err
+		}
+
+		row := strings.Split(string(bytes), "")
+		board = append(board, row)
+	}
+
+	return board, nil
 }
 
 func parseShort(bytes []byte) uint16 {
 	return binary.LittleEndian.Uint16(bytes)
+}
+
+func checksumRegion(bytes []byte) uint16 {
+	var checksum uint16
+
+	for i := range bytes {
+		if checksum&0x0001 == 1 {
+			checksum = (checksum >> 1) + 0x8000
+		} else {
+			checksum = checksum >> 1
+		}
+
+		checksum += uint16(bytes[i])
+	}
+
+	return checksum
 }
