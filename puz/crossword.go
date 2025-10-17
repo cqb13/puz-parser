@@ -23,7 +23,7 @@ func (p *Puzzle) Display() {
 }
 
 func (p *Puzzle) String() string {
-	str := fmt.Sprintf("Title: %s\nAuthor: %s\nCopyright: %s\nNotes: %s\nSize: %dx%d\nClues:\n", p.Title, p.Author, p.Copyright, p.Notes, p.Width, p.Height)
+	str := fmt.Sprintf("Title: %s\nAuthor: %s\nCopyright: %s\nNotes: %s\nVersion: %s\nSize: %dx%d\nClues:\n", p.Title, p.Author, p.Copyright, p.Notes, p.metadata.Version, p.Width, p.Height)
 	for i, clue := range p.Clues {
 		str += fmt.Sprintf("\t%d. %s\n", i+1, clue)
 	}

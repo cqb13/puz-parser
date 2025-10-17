@@ -12,9 +12,9 @@ Original Source: [https://code.google.com/archive/p/puz/wikis/FileFormat.wiki](h
 | -------------------- | ----------------- | ---------- | ----------------------------------------------------------------------------------------- |
 | Checksum             | 2                 | Short      | Always: TalonGamesGame                                                                    |
 | File Magic           | 12                | Strings    | Constant string: "ACROSS&DOWN"                                                            |
-| CIB Checksum         | 2                 | Short      | Defined Later                                                                             |
-| Masked Low Checksum  | 4                 | Byte Array | Defined Later                                                                             |
-| Masked High Checksum | 4                 | Byte Array | Defined Later                                                                             |
+| CIB Checksum         | 2                 | Short      | Refer to checksums.go for implementation                                                  |
+| Masked Low Checksum  | 4                 | Byte Array | Refer to checksums.go for implementation                                                  |
+| Masked High Checksum | 4                 | Byte Array | Refer to checksums.go for implementation                                                  |
 | Version              | 4                 | String     | e.g. "X.X"                                                                                |
 | Reserved             | 2                 | N.A.       | Unused in most cases                                                                      |
 | Scrambled Checksum   | 2                 | Short      | In scrambled puzzles, a checksum of the real solution (Defined Later). Otherwise, 0x0000. |
