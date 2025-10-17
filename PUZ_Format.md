@@ -48,5 +48,6 @@ _If a player works on a puzzle and then saves their game, the cells they've fill
 | Author    | Unknown           | String       | Author of the crossword    |
 | Copyright | Unknown           | String       | Copyright of the crossword |
 | Clues     | Unknown           | String Array | List of clues              |
+| Notes     | Unknown           | String       | Notes for the crossword    |
 
 ## Checksums
