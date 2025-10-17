@@ -1,88 +1,11 @@
 package puz
 
 import (
-	"encoding/binary"
-	"errors"
 	"fmt"
 	"strings"
 )
 
 const file_magic = "ACROSS&DOWN"
-
-type checksums struct {
-	checksum           uint16
-	cibChecksum        uint16
-	maskedLowChecksum  [4]byte
-	maskedHighChecksum [4]byte
-}
-
-type ByteReader struct {
-	bytes  []byte
-	offset int
-}
-
-func NewByteReader(bytes []byte) ByteReader {
-	return ByteReader{
-		bytes,
-		0,
-	}
-}
-
-func (r *ByteReader) Read(amount int) ([]byte, error) {
-	if r.offset+amount > len(r.bytes) {
-		return nil, errors.New("Out of bounds")
-	}
-
-	start := r.offset
-	r.offset += amount
-	return r.bytes[start:r.offset], nil
-}
-
-func (r *ByteReader) ReadStr() string {
-	var bytes []byte
-
-	for i := r.offset; i < len(r.bytes) && r.bytes[i] != 0x00; i++ {
-		bytes = append(bytes, r.bytes[i])
-		r.offset++
-	}
-
-	r.offset++
-
-	return string(bytes)
-}
-
-func (r *ByteReader) ReadByte() (byte, error) {
-	b, err := r.Read(1)
-	if err != nil {
-		return 0, err
-	}
-	return b[0], nil
-}
-
-func (r *ByteReader) Len() int {
-	return len(r.bytes)
-}
-
-func (r *ByteReader) ReadShort() (uint16, error) {
-	b, err := r.Read(2)
-	if err != nil {
-		return 0, err
-	}
-	return parseShort(b), nil
-}
-
-func (r *ByteReader) Step() {
-	r.offset++
-}
-
-func (r *ByteReader) SetOffset(offset int) error {
-	if offset < 0 || offset > len(r.bytes) {
-		return errors.New("invalid offset")
-	}
-
-	r.offset = offset
-	return nil
-}
 
 func LoadPuz(bytes []byte) (*Puzzle, error) {
 	var puzzle Puzzle
@@ -230,35 +153,6 @@ func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
 	return nil
 }
 
-func parseStringsSection(reader *ByteReader, puzzle *Puzzle) error {
-	title := reader.ReadStr()
-	puzzle.Title = title
-	author := reader.ReadStr()
-	puzzle.Author = author
-	copyright := reader.ReadStr()
-	puzzle.Copyright = copyright
-
-	var clues []string
-
-	for range puzzle.NumClues {
-		clue := reader.ReadStr()
-		clues = append(clues, clue)
-		fmt.Println(clue)
-	}
-
-	if len(clues) != int(puzzle.NumClues) {
-		return fmt.Errorf("Not enough clues, expected %d clues, found %d", puzzle.NumClues, len(clues))
-	}
-
-	puzzle.Clues = clues
-
-	notes := reader.ReadStr()
-	puzzle.Notes = notes
-	fmt.Println(notes)
-
-	return nil
-}
-
 func parseBoard(reader *ByteReader, width int, height int) ([][]string, error) {
 	var board [][]string
 
@@ -275,22 +169,29 @@ func parseBoard(reader *ByteReader, width int, height int) ([][]string, error) {
 	return board, nil
 }
 
-func parseShort(bytes []byte) uint16 {
-	return binary.LittleEndian.Uint16(bytes)
-}
+func parseStringsSection(reader *ByteReader, puzzle *Puzzle) error {
+	title := reader.ReadStr()
+	puzzle.Title = title
+	author := reader.ReadStr()
+	puzzle.Author = author
+	copyright := reader.ReadStr()
+	puzzle.Copyright = copyright
 
-func checksumRegion(bytes []byte) uint16 {
-	var checksum uint16
+	var clues []string
 
-	for i := range bytes {
-		if checksum&0x0001 == 1 {
-			checksum = (checksum >> 1) + 0x8000
-		} else {
-			checksum = checksum >> 1
-		}
-
-		checksum += uint16(bytes[i])
+	for range puzzle.NumClues {
+		clue := reader.ReadStr()
+		clues = append(clues, clue)
 	}
 
-	return checksum
+	if len(clues) != int(puzzle.NumClues) {
+		return fmt.Errorf("Not enough clues, expected %d clues, found %d", puzzle.NumClues, len(clues))
+	}
+
+	puzzle.Clues = clues
+
+	notes := reader.ReadStr()
+	fmt.Println(notes)
+
+	return nil
 }

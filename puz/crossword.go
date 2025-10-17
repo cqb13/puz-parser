@@ -1,5 +1,7 @@
 package puz
 
+const file_magic = "ACROSS&DOWN"
+
 type Puzzle struct {
 	Width     uint8
 	Height    uint8
@@ -19,4 +21,11 @@ type metadata struct {
 	Bitmask           uint16
 	ScrambledTag      uint16
 	ScrambledChecksum uint16
+}
+
+type checksums struct {
+	checksum           uint16
+	cibChecksum        uint16
+	maskedLowChecksum  [4]byte
+	maskedHighChecksum [4]byte
 }
