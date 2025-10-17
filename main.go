@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err = puz.LoadPuz(bytes)
+	_, err = puz.DecodePuz(bytes)
 	if err != nil {
 		panic(err)
 	}

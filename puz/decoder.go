@@ -5,9 +5,7 @@ import (
 	"strings"
 )
 
-const file_magic = "ACROSS&DOWN"
-
-func LoadPuz(bytes []byte) (*Puzzle, error) {
+func DecodePuz(bytes []byte) (*Puzzle, error) {
 	var puzzle Puzzle
 
 	reader := NewByteReader(bytes)
@@ -49,12 +47,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	fileMagic, err := reader.Read(11)
-	if err != nil {
-		return nil, err
-	}
-	reader.Step() // skips the null terminator on fileMagic str
-
+	fileMagic := reader.ReadStr()
 	if string(fileMagic) != file_magic {
 		return nil, fmt.Errorf("Unexpected file magic, expected ACROSS&DOWN, found %s", string(fileMagic))
 	}
@@ -191,7 +184,7 @@ func parseStringsSection(reader *ByteReader, puzzle *Puzzle) error {
 	puzzle.Clues = clues
 
 	notes := reader.ReadStr()
-	fmt.Println(notes)
+	puzzle.Notes = notes
 
 	return nil
 }
