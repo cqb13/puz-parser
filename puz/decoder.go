@@ -2,10 +2,9 @@ package puz
 
 import (
 	"fmt"
-	"strings"
 )
 
-func DecodePuz(bytes []byte) (*Puzzle, error) {
+func DecodePuz(bytes []byte, ignoreChecksums bool) (*Puzzle, error) {
 	var puzzle Puzzle
 
 	reader := NewByteReader(bytes)
@@ -23,6 +22,10 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	err = parseStringsSection(&reader, &puzzle)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse strings section: %s", err)
+	}
+
+	if ignoreChecksums {
+		return &puzzle, nil
 	}
 
 	computedChecksums := computeChecksums(bytes, int(puzzle.Width), int(puzzle.Height), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
@@ -47,8 +50,8 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 }
 
 func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
-	if reader.Len() < 51 {
-		return nil, fmt.Errorf("Not enough data, expected header length of 51 bytes, found %d", reader.Len())
+	if reader.Len() < 52 {
+		return nil, fmt.Errorf("Not enough data, expected header length of 52 bytes, found %d", reader.Len())
 	}
 
 	checksum, err := reader.ReadShort()
@@ -74,7 +77,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 		return nil, err
 	}
 
-	version, err := reader.Read(3)
+	version, err := reader.Read(4)
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +157,8 @@ func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
 	return nil
 }
 
-func parseBoard(reader *ByteReader, width int, height int) ([][]string, error) {
-	var board [][]string
+func parseBoard(reader *ByteReader, width int, height int) ([][]byte, error) {
+	var board [][]byte
 
 	for range height {
 		bytes, err := reader.Read(width)
@@ -163,8 +166,7 @@ func parseBoard(reader *ByteReader, width int, height int) ([][]string, error) {
 			return nil, err
 		}
 
-		row := strings.Split(string(bytes), "")
-		board = append(board, row)
+		board = append(board, bytes)
 	}
 
 	return board, nil

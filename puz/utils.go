@@ -76,17 +76,3 @@ func (r *ByteReader) SetOffset(offset int) error {
 func parseShort(bytes []byte) uint16 {
 	return binary.LittleEndian.Uint16(bytes)
 }
-
-func checksumRegion(bytes []byte, checksum uint16) uint16 {
-	for i := range bytes {
-		if checksum&0x0001 == 1 {
-			checksum = (checksum >> 1) + 0x8000
-		} else {
-			checksum = checksum >> 1
-		}
-
-		checksum += uint16(bytes[i])
-	}
-
-	return checksum
-}

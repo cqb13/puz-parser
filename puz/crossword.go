@@ -13,8 +13,8 @@ type Puzzle struct {
 	Height    uint8
 	NumClues  uint16
 	Clues     []string
-	Solution  [][]string
-	State     [][]string
+	Solution  [][]byte
+	State     [][]byte
 	metadata  metadata
 }
 
@@ -31,7 +31,7 @@ func (p *Puzzle) String() string {
 	for _, row := range p.Solution {
 		str += "\t"
 		for _, letter := range row {
-			str += letter + " "
+			str += string(letter) + " "
 		}
 		str += "\n"
 	}
@@ -39,11 +39,28 @@ func (p *Puzzle) String() string {
 	for _, row := range p.State {
 		str += "\t"
 		for _, letter := range row {
-			str += letter + " "
+			str += string(letter) + " "
 		}
 		str += "\n"
 	}
 	return str
+}
+
+func (p *Puzzle) Scrambled() bool {
+	if p.metadata.ScrambledTag == 0 {
+		return false
+	}
+
+	return true
+}
+
+func (p *Puzzle) Unscramble(key int) error {
+	err := Unscramble(p, key)
+	if err != nil {
+		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+	}
+
+	return nil
 }
 
 func (p *Puzzle) GetMetadata() metadata {

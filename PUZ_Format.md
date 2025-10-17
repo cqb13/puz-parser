@@ -25,7 +25,7 @@ Original Source: [https://code.google.com/archive/p/puz/wikis/FileFormat.wiki](h
 | Bitmask              | 2                 | Short      | A bitmask. _Operations Unknown_                                                           |
 | Scrambled Tag        | 2                 | Short      | 0 for unscrambled puzzles. Nonzero (often 4) for scrambled puzzles.                       |
 
-_The header will always be 51 bytes long_
+_The header will always be 52 bytes long_
 
 ## Solution and State Boards
 
@@ -49,5 +49,3 @@ _If a player works on a puzzle and then saves their game, the cells they've fill
 | Copyright | Unknown           | String       | Copyright of the crossword |
 | Clues     | Unknown           | String Array | List of clues              |
 | Notes     | Unknown           | String       | Notes for the crossword    |
-
-## Checksums

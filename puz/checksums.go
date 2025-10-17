@@ -72,3 +72,12 @@ func checksumStrings(title string, author string, copyright string, clues []stri
 
 	return checksum
 }
+
+func checksumRegion(buffer []byte, checksum uint16) uint16 {
+	for i := range buffer {
+		checksum = (checksum >> 1) | ((checksum & 1) << 15)
+		checksum += uint16(buffer[i])
+	}
+
+	return checksum
+}
