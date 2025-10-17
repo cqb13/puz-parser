@@ -42,11 +42,11 @@ _If a player works on a puzzle and then saves their game, the cells they've fill
 
 **Clues are arranged numerically. When two clues have the same number, the Across clue comes before the Down clue.**
 
-| Component | Length (In Bytes) | Type       | Description                |
-| --------- | ----------------- | ---------- | -------------------------- |
-| Title     | Unknown           | String     | Title of the crossword     |
-| Author    | Unknown           | String     | Author of the crossword    |
-| Copyright | Unknown           | String     | Copyright of the crossword |
-| Clues     | Number of Clues   | Clue Array | List of clues              |
+| Component | Length (In Bytes) | Type         | Description                |
+| --------- | ----------------- | ------------ | -------------------------- |
+| Title     | Unknown           | String       | Title of the crossword     |
+| Author    | Unknown           | String       | Author of the crossword    |
+| Copyright | Unknown           | String       | Copyright of the crossword |
+| Clues     | Unknown           | String Array | List of clues              |
 
 ## Checksums
