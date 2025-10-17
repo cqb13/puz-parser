@@ -27,13 +27,41 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	//TODO: validate checksums
 
-	expectedCibChecksum := checksumRegion(bytes[44:52])
+	computedCibChecksum := checksumRegion(bytes[44:52], 0)
 
-	if foundChecksums.cibChecksum != expectedCibChecksum {
-		return nil, fmt.Errorf("CIB Checksum mismatch, expected %d, found %d", expectedCibChecksum, foundChecksums.cibChecksum)
+	if foundChecksums.cibChecksum != computedCibChecksum {
+		return nil, fmt.Errorf("CIB Checksum mismatch, found %d, computed %d", foundChecksums.cibChecksum, computedCibChecksum)
 	}
 
-	_ = foundChecksums
+	computedChecksum := computedCibChecksum
+	offset := 52
+	computedChecksum = checksumRegion(bytes[offset:offset+int(puzzle.Width*puzzle.Height)], computedChecksum)
+	offset += int(puzzle.Width * puzzle.Height)
+	computedChecksum = checksumRegion(bytes[offset:offset+int(puzzle.Width*puzzle.Height)], computedChecksum)
+
+	if len(puzzle.Title) > 0 {
+		computedChecksum = checksumRegion(append([]byte(puzzle.Title), 0x00), computedChecksum)
+	}
+
+	if len(puzzle.Author) > 0 {
+		computedChecksum = checksumRegion(append([]byte(puzzle.Author), 0x00), computedChecksum)
+	}
+
+	if len(puzzle.Copyright) > 0 {
+		computedChecksum = checksumRegion(append([]byte(puzzle.Copyright), 0x00), computedChecksum)
+	}
+
+	for _, clue := range puzzle.Clues {
+		computedChecksum = checksumRegion([]byte(clue), computedChecksum)
+	}
+
+	if len(puzzle.Notes) > 0 {
+		computedChecksum = checksumRegion(append([]byte(puzzle.Notes), 0x00), computedChecksum)
+	}
+
+	if foundChecksums.checksum != computedChecksum {
+		return nil, fmt.Errorf("Checksum mismatch, found %d, computed %d", foundChecksums.checksum, computedChecksum)
+	}
 
 	return &puzzle, nil
 }

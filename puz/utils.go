@@ -77,9 +77,7 @@ func parseShort(bytes []byte) uint16 {
 	return binary.LittleEndian.Uint16(bytes)
 }
 
-func checksumRegion(bytes []byte) uint16 {
-	var checksum uint16
-
+func checksumRegion(bytes []byte, checksum uint16) uint16 {
 	for i := range bytes {
 		if checksum&0x0001 == 1 {
 			checksum = (checksum >> 1) + 0x8000
