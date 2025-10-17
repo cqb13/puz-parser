@@ -18,7 +18,7 @@ Original Source: [https://code.google.com/archive/p/puz/wikis/FileFormat.wiki](h
 | Version              | 4                 | String     | e.g. "X.X"                                                                                |
 | Reserved             | 2                 | N.A.       | Unused in most cases                                                                      |
 | Scrambled Checksum   | 2                 | Short      | In scrambled puzzles, a checksum of the real solution (Defined Later). Otherwise, 0x0000. |
-| Reserved             | 11                | N.A        | Unused in most cases                                                                      |
+| Reserved             | 12                | N.A        | Unused in most cases                                                                      |
 | Width                | 1                 | Byte       | The width of the board                                                                    |
 | Height               | 1                 | Byte       | The height of the board                                                                   |
 | Number of Clues      | 2                 | Short      | The number of clues for the board                                                         |

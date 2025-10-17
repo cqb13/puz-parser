@@ -14,6 +14,7 @@ func main() {
 		panic(err)
 	}
 
+	analyzed := 0
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -35,6 +36,10 @@ func main() {
 		_, err = puz.DecodePuz(bytes)
 		if err != nil {
 			fmt.Printf("Failed to parse %s: %s\n", entry.Name(), err)
+			continue
 		}
+		analyzed++
 	}
+
+	fmt.Printf("Analyzed %d/%d\n", analyzed, len(entries))
 }
