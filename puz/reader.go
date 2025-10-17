@@ -38,6 +38,19 @@ func (r *ByteReader) Read(amount int) ([]byte, error) {
 	return r.bytes[start:r.offset], nil
 }
 
+func (r *ByteReader) ReadStr() string {
+	var bytes []byte
+
+	for i := r.offset; i < len(r.bytes) && r.bytes[i] != 0x00; i++ {
+		bytes = append(bytes, r.bytes[i])
+		r.offset++
+	}
+
+	r.offset++
+
+	return string(bytes)
+}
+
 func (r *ByteReader) ReadByte() (byte, error) {
 	b, err := r.Read(1)
 	if err != nil {
@@ -59,7 +72,7 @@ func (r *ByteReader) ReadShort() (uint16, error) {
 }
 
 func (r *ByteReader) Step() {
-	r.offset += 1
+	r.offset++
 }
 
 func (r *ByteReader) SetOffset(offset int) error {
@@ -78,12 +91,17 @@ func LoadPuz(bytes []byte) (*Puzzle, error) {
 
 	foundChecksums, err := parseHeader(&reader, &puzzle)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read header: %s", err)
+		return nil, fmt.Errorf("Failed to parse header: %s", err)
 	}
 
 	err = parseSolutionAndState(&reader, &puzzle)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read board and state: %s", err)
+		return nil, fmt.Errorf("Failed to parse solution and state: %s", err)
+	}
+
+	err = parseStringsSection(&reader, &puzzle)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse strings section: %s", err)
 	}
 
 	//TODO: validate checksums
@@ -193,7 +211,7 @@ func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
 	expectedLen := reader.offset + int((puzzle.Width*puzzle.Height)*2)
 
 	if expectedLen > reader.Len() {
-		return fmt.Errorf("Not enough data, expected at least %d bytes, found %d bytes", expectedLen, reader.Len())
+		return fmt.Errorf("Not enough data, expected at least %d bytes, found %d", expectedLen, reader.Len())
 	}
 
 	solution, err := parseBoard(reader, int(puzzle.Width), int(puzzle.Height))
@@ -208,6 +226,35 @@ func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
 
 	puzzle.Solution = solution
 	puzzle.State = state
+
+	return nil
+}
+
+func parseStringsSection(reader *ByteReader, puzzle *Puzzle) error {
+	title := reader.ReadStr()
+	puzzle.Title = title
+	author := reader.ReadStr()
+	puzzle.Author = author
+	copyright := reader.ReadStr()
+	puzzle.Copyright = copyright
+
+	var clues []string
+
+	for range puzzle.NumClues {
+		clue := reader.ReadStr()
+		clues = append(clues, clue)
+		fmt.Println(clue)
+	}
+
+	if len(clues) != int(puzzle.NumClues) {
+		return fmt.Errorf("Not enough clues, expected %d clues, found %d", puzzle.NumClues, len(clues))
+	}
+
+	puzzle.Clues = clues
+
+	notes := reader.ReadStr()
+	puzzle.Notes = notes
+	fmt.Println(notes)
 
 	return nil
 }

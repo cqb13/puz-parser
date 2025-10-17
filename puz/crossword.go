@@ -10,6 +10,7 @@ type Puzzle struct {
 	Author    string
 	Copyright string
 	Clues     []string
+	Notes     string
 	Metadata  metadata
 }
 
