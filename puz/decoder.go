@@ -35,7 +35,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	_ = foundChecksums
 
-	return nil, nil
+	return &puzzle, nil
 }
 
 func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
@@ -70,7 +70,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.Metadata.Version = string(version)
+	puzzle.metadata.Version = string(version)
 
 	// skips reserved space, not used in most files
 	reader.Step()
@@ -80,7 +80,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.Metadata.ScrambledChecksum = scrambledChecksum
+	puzzle.metadata.ScrambledChecksum = scrambledChecksum
 
 	// skips space, not sure why
 	reader.SetOffset(44)
@@ -105,13 +105,13 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.Metadata.Bitmask = bitmask
+	puzzle.metadata.Bitmask = bitmask
 
 	scrambledTag, err := reader.ReadShort()
 	if err != nil {
 		return nil, err
 	}
-	puzzle.Metadata.ScrambledTag = scrambledTag
+	puzzle.metadata.ScrambledTag = scrambledTag
 
 	foundChecksums := checksums{
 		checksum,
