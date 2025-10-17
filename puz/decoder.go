@@ -25,42 +25,22 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 		return nil, fmt.Errorf("Failed to parse strings section: %s", err)
 	}
 
-	//TODO: validate checksums
+	computedChecksums := computeChecksums(bytes, int(puzzle.Width), int(puzzle.Height), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
-	computedCibChecksum := checksumRegion(bytes[44:52], 0)
-
-	if foundChecksums.cibChecksum != computedCibChecksum {
-		return nil, fmt.Errorf("CIB Checksum mismatch, found %d, computed %d", foundChecksums.cibChecksum, computedCibChecksum)
+	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
+		return nil, fmt.Errorf("CIB Checksum mismatch, found %d, computed %d", foundChecksums.cibChecksum, computedChecksums.cibChecksum)
 	}
 
-	computedChecksum := computedCibChecksum
-	offset := 52
-	computedChecksum = checksumRegion(bytes[offset:offset+int(puzzle.Width*puzzle.Height)], computedChecksum)
-	offset += int(puzzle.Width * puzzle.Height)
-	computedChecksum = checksumRegion(bytes[offset:offset+int(puzzle.Width*puzzle.Height)], computedChecksum)
-
-	if len(puzzle.Title) > 0 {
-		computedChecksum = checksumRegion(append([]byte(puzzle.Title), 0x00), computedChecksum)
+	if foundChecksums.checksum != computedChecksums.checksum {
+		return nil, fmt.Errorf("Checksum mismatch, found %d, computed %d", foundChecksums.checksum, computedChecksums.checksum)
 	}
 
-	if len(puzzle.Author) > 0 {
-		computedChecksum = checksumRegion(append([]byte(puzzle.Author), 0x00), computedChecksum)
+	if foundChecksums.maskedLowChecksum != computedChecksums.maskedLowChecksum {
+		return nil, fmt.Errorf("Masked Low Checksum mismatch, found %v, computed %v", foundChecksums.maskedLowChecksum, computedChecksums.maskedLowChecksum)
 	}
 
-	if len(puzzle.Copyright) > 0 {
-		computedChecksum = checksumRegion(append([]byte(puzzle.Copyright), 0x00), computedChecksum)
-	}
-
-	for _, clue := range puzzle.Clues {
-		computedChecksum = checksumRegion([]byte(clue), computedChecksum)
-	}
-
-	if len(puzzle.Notes) > 0 {
-		computedChecksum = checksumRegion(append([]byte(puzzle.Notes), 0x00), computedChecksum)
-	}
-
-	if foundChecksums.checksum != computedChecksum {
-		return nil, fmt.Errorf("Checksum mismatch, found %d, computed %d", foundChecksums.checksum, computedChecksum)
+	if foundChecksums.maskedHighChecksum != computedChecksums.maskedHighChecksum {
+		return nil, fmt.Errorf("Masked High Checksum mismatch, found %v, computed %v", foundChecksums.maskedHighChecksum, computedChecksums.maskedHighChecksum)
 	}
 
 	return &puzzle, nil
