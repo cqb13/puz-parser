@@ -28,7 +28,7 @@ func DecodePuz(bytes []byte, ignoreChecksums bool) (*Puzzle, error) {
 		return &puzzle, nil
 	}
 
-	computedChecksums := computeChecksums(bytes, int(puzzle.Width), int(puzzle.Height), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bytes, puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
 		return nil, fmt.Errorf("CIB Checksum mismatch, found %d, computed %d", foundChecksums.cibChecksum, computedChecksums.cibChecksum)
@@ -105,6 +105,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	}
 	puzzle.Width = width
 	puzzle.Height = height
+	puzzle.Size = int(width) * int(height)
 
 	clueCount, err := reader.ReadShort()
 	if err != nil {
@@ -135,7 +136,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 }
 
 func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
-	expectedLen := reader.offset + int((puzzle.Width*puzzle.Height)*2)
+	expectedLen := reader.offset + puzzle.Size*2
 
 	if expectedLen > reader.Len() {
 		return fmt.Errorf("Not enough data, expected at least %d bytes, found %d", expectedLen, reader.Len())

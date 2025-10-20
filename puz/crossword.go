@@ -11,6 +11,7 @@ type Puzzle struct {
 	Notes     string
 	Width     uint8
 	Height    uint8
+	Size      int
 	NumClues  uint16
 	Clues     []string
 	Solution  [][]byte

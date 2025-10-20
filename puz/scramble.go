@@ -14,8 +14,8 @@ func isLetter(char byte) bool {
 	return false
 }
 
-func createSolutionBuffer(puzzle *Puzzle) []byte {
-	var buffer = make([]byte, puzzle.Width*puzzle.Height)
+func createScrambleBuffer(puzzle *Puzzle) []byte {
+	var buffer = make([]byte, puzzle.Size)
 	var n = 0
 
 	for x := range puzzle.Width {
@@ -61,71 +61,96 @@ func keyToBytes(key int) ([]byte, error) {
 	return keyBytes, nil
 }
 
+func convertLettersToNumbers(buffer []byte) {
+	for i := range buffer {
+		buffer[i] -= 'A'
+	}
+}
+
+func convertNumbersToLetters(buffer []byte) {
+	for i := range buffer {
+		buffer[i] += 'A'
+	}
+}
+
 func Unscramble(puzzle *Puzzle, key int) error {
-	keyBytes, err := keyToBytes(key)
+	keyDigits, err := keyToBytes(key)
 	if err != nil {
 		return err
 	}
 
-	buffer := createSolutionBuffer(puzzle)
-	size := len(buffer)
+	letterBuffer := createScrambleBuffer(puzzle)
+	totalLetters := len(letterBuffer)
 
-	if size < 12 {
-		return fmt.Errorf("Too few characters to unscramble, minimum 12, found %d", size)
+	if totalLetters < 12 {
+		return fmt.Errorf("too few characters to unscramble (minimum 12, found %d)", totalLetters)
 	}
 
-	for i, b := range buffer {
-		buffer[i] = b - 'A'
-	}
+	convertLettersToNumbers(letterBuffer)
+	tempBuffer := make([]byte, totalLetters)
 
-	tmp := make([]byte, size)
+	for round := 3; round >= 0; round-- {
+		stepSize := 1 << (4 - round)
 
-	for k := 3; k >= 0; k-- {
-		n := 1 << (4 - k)
-		if n > size {
-			n -= size | 1
+		if stepSize > totalLetters {
+			if stepSize%2 == 0 {
+				stepSize -= totalLetters + 1
+			} else {
+				stepSize -= totalLetters
+			}
 		}
-		for i := 0; i < int(keyBytes[k]); i++ {
-			copy(tmp, buffer[size-n:])
 
-			if size%2 == 0 {
-				tmp = append(tmp[1:n], tmp[0])
+		for repeat := 0; repeat < int(keyDigits[round]); repeat++ {
+			copy(tempBuffer, letterBuffer[totalLetters-stepSize:])
+
+			if totalLetters%2 == 0 {
+				first := tempBuffer[0]
+				copy(tempBuffer, tempBuffer[1:stepSize])
+				tempBuffer[stepSize-1] = first
 			}
 
-			copy(buffer[n:], buffer[:size-n])
-			copy(buffer[:n], tmp[:n])
+			copy(letterBuffer[stepSize:], letterBuffer[:totalLetters-stepSize])
+			copy(letterBuffer[:stepSize], tempBuffer[:stepSize])
 		}
 
-		j := -1
-		for i := range size {
-			j += 1 << (4 - k)
-			for j >= size {
-				j -= size | 1
+		position := -1
+		for i := range totalLetters {
+			position += 1 << (4 - round)
+			for position >= totalLetters {
+				if totalLetters%2 == 0 {
+					position -= totalLetters + 1
+				} else {
+					position -= totalLetters
+				}
 			}
-			buffer[j] = byte((int(buffer[j]) - int(keyBytes[i%4]) + 26) % 26)
+			keyOffset := int(keyDigits[i%4])
+			letterBuffer[position] = byte((int(letterBuffer[position]) - keyOffset + 26) % 26)
 		}
 	}
 
-	copy(tmp, buffer)
-	j := -1
-	for i := range size {
-		j += 16
-		for j >= size {
-			j -= size | 1
+	copy(tempBuffer, letterBuffer)
+	position := -1
+	for i := range totalLetters {
+		position += 16
+		for position >= totalLetters {
+			if totalLetters%2 == 0 {
+				position -= totalLetters + 1
+			} else {
+				position -= totalLetters
+			}
 		}
-		buffer[i] = tmp[j]
+		letterBuffer[i] = tempBuffer[position]
 	}
 
-	for i := range buffer {
-		buffer[i] += 'A'
+	convertNumbersToLetters(letterBuffer)
+
+	if checksumRegion(letterBuffer, 0) != puzzle.metadata.ScrambledChecksum {
+		return fmt.Errorf("incorrect key provided (checksum mismatch)")
 	}
 
-	if checksumRegion(buffer, 0) != puzzle.metadata.ScrambledChecksum {
-		return fmt.Errorf("Incorrect key provided, checksum mismatch")
-	}
-
-	updatePuzzleSolution(puzzle, buffer)
+	updatePuzzleSolution(puzzle, letterBuffer)
 	puzzle.metadata.ScrambledTag = 0
 	puzzle.metadata.ScrambledChecksum = 0x0000
+
 	return nil
 }

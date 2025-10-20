@@ -8,41 +8,73 @@ import (
 )
 
 func main() {
-	var path = "tests/test-files/nyt_locked.puz"
+	var path = "tests/test-files/"
 
-	fp, err := os.Open(path)
+	puzzle, err := loadPuzzle(path + "nyt_sun_rebus.puz")
+	err = puzzle.Unscramble(2173)
+	if err != nil {
+		fmt.Println(err)
+	}
+	puzzle.Display()
+
+	puzzle.Display()
+
+	return
+
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		panic(err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+
+		puzzle, err := loadPuzzle(path + name)
+		if err != nil {
+			fmt.Printf("Failed on %s : %s\n", name, err)
+			continue
+		}
+
+		if puzzle.Scrambled() {
+			fmt.Println("cracking ", name)
+			key := crackPuzzle(puzzle)
+
+			if key != -1 {
+				fmt.Printf("Cracked %s : %d\n", name, key)
+			} else {
+				fmt.Println("Failed to crack ", name)
+			}
+		}
+	}
+}
+
+func loadPuzzle(path string) (*puz.Puzzle, error) {
+	fp, err := os.Open(path)
+	if err != nil {
+		return nil, err
 	}
 	defer fp.Close()
 
 	bytes, err := io.ReadAll(fp)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	puzzle, err := puz.DecodePuz(bytes, false)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	fmt.Printf("Scrambled: %v\n", puzzle.Scrambled())
-	puzzle.Display()
-
-	if puzzle.Scrambled() {
-		key := crackPuzzle(puzzle)
-		fmt.Println(key)
-	}
+	return puzzle, nil
 }
 
 func crackPuzzle(puzzle *puz.Puzzle) int {
 	key := 0
 
 	for key < 10000 {
-		if key%1000 == 0 {
-			fmt.Println("Checking", key)
-		}
-
 		err := puzzle.Unscramble(key)
 		if err == nil {
 			return key
