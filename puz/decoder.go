@@ -83,9 +83,12 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	}
 	puzzle.metadata.Version = string(version)
 
-	// skips reserved space, not used in most files
-	reader.Step()
-	reader.Step()
+	// not used in most files
+	reserved1, err := reader.Read(2)
+	if err != nil {
+		return nil, err
+	}
+	puzzle.reserved1 = [2]byte(reserved1)
 
 	scrambledChecksum, err := reader.ReadShort()
 	if err != nil {
@@ -93,8 +96,13 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	}
 	puzzle.metadata.ScrambledChecksum = scrambledChecksum
 
-	// skips space, not sure why
-	reader.SetOffset(44)
+	// not used in most files
+	reserved2, err := reader.Read(12)
+	if err != nil {
+		return nil, err
+	}
+	puzzle.reserved2 = [12]byte(reserved2)
+
 	width, err := reader.ReadByte()
 	if err != nil {
 		return nil, err

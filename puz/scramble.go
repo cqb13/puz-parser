@@ -46,14 +46,14 @@ func updatePuzzleSolution(puzzle *Puzzle, buffer []byte) {
 
 func keyToBytes(key int) ([]byte, error) {
 	if key < 1000 || key > 9999 {
-		return nil, fmt.Errorf("the key must be a 4-digit number between 1000 and 9999")
+		return nil, fmt.Errorf("The key must be a 4-digit number between 1000 and 9999")
 	}
 
 	keyBytes := fmt.Appendf(nil, "%04d", key)
 
 	for i := range keyBytes {
 		if keyBytes[i] == '0' {
-			return nil, fmt.Errorf("the key cannot contain any zeros")
+			return nil, fmt.Errorf("The key cannot contain any zeros")
 		}
 		keyBytes[i] -= '0'
 	}
