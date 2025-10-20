@@ -10,17 +10,6 @@ import (
 func main() {
 	var path = "tests/test-files/"
 
-	puzzle, err := loadPuzzle(path + "nyt_sun_rebus.puz")
-	err = puzzle.Unscramble(2173)
-	if err != nil {
-		fmt.Println(err)
-	}
-	puzzle.Display()
-
-	puzzle.Display()
-
-	return
-
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		panic(err)

@@ -73,7 +73,7 @@ func convertNumbersToLetters(buffer []byte) {
 	}
 }
 
-func Unscramble(puzzle *Puzzle, key int) error {
+func scramble(puzzle *Puzzle, key int) error {
 	keyDigits, err := keyToBytes(key)
 	if err != nil {
 		return err
@@ -83,7 +83,87 @@ func Unscramble(puzzle *Puzzle, key int) error {
 	totalLetters := len(letterBuffer)
 
 	if totalLetters < 12 {
-		return fmt.Errorf("too few characters to unscramble (minimum 12, found %d)", totalLetters)
+		return fmt.Errorf("Too few characters to scramble, minimum 12, found %d", totalLetters)
+	}
+
+	puzzle.metadata.ScrambledChecksum = checksumRegion(letterBuffer, 0)
+	puzzle.metadata.ScrambledTag = 1
+
+	convertLettersToNumbers(letterBuffer)
+
+	tempBuffer := make([]byte, totalLetters)
+
+	copy(tempBuffer, letterBuffer)
+	position := -1
+	for i := range totalLetters {
+		position += 16
+		for position >= totalLetters {
+			if totalLetters%2 == 0 {
+				position -= totalLetters + 1
+			} else {
+				position -= totalLetters
+			}
+		}
+		letterBuffer[position] = tempBuffer[i]
+	}
+
+	for round := range 4 {
+		stepSize := 1 << (4 - round)
+
+		position := -1
+		for i := range totalLetters {
+			position += stepSize
+			for position >= totalLetters {
+				if totalLetters%2 == 0 {
+					position -= totalLetters + 1
+				} else {
+					position -= totalLetters
+				}
+			}
+			keyOffset := int(keyDigits[i%4])
+			letterBuffer[position] = byte((int(letterBuffer[position]) + keyOffset) % 26)
+		}
+
+		if stepSize > totalLetters {
+			if totalLetters%2 == 0 {
+				stepSize -= totalLetters + 1
+			} else {
+				stepSize -= totalLetters
+			}
+		}
+
+		for repeat := 0; repeat < int(keyDigits[round]); repeat++ {
+			copy(tempBuffer, letterBuffer[:stepSize])
+
+			if totalLetters%2 == 0 {
+				last := tempBuffer[stepSize-1]
+				copy(tempBuffer[1:], tempBuffer[:stepSize-1])
+				tempBuffer[0] = last
+			}
+
+			copy(letterBuffer, letterBuffer[stepSize:])
+			copy(letterBuffer[totalLetters-stepSize:], tempBuffer[:stepSize])
+		}
+	}
+
+	convertNumbersToLetters(letterBuffer)
+
+	updatePuzzleSolution(puzzle, letterBuffer)
+
+	return nil
+}
+
+func unscramble(puzzle *Puzzle, key int) error {
+	keyDigits, err := keyToBytes(key)
+	if err != nil {
+		return err
+	}
+
+	letterBuffer := createScrambleBuffer(puzzle)
+	totalLetters := len(letterBuffer)
+
+	if totalLetters < 12 {
+		return fmt.Errorf("Too few characters to unscramble, minimum 12, found %d", totalLetters)
 	}
 
 	convertLettersToNumbers(letterBuffer)
@@ -145,7 +225,7 @@ func Unscramble(puzzle *Puzzle, key int) error {
 	convertNumbersToLetters(letterBuffer)
 
 	if checksumRegion(letterBuffer, 0) != puzzle.metadata.ScrambledChecksum {
-		return fmt.Errorf("incorrect key provided (checksum mismatch)")
+		return fmt.Errorf("Incorrect key provided, checksum mismatch")
 	}
 
 	updatePuzzleSolution(puzzle, letterBuffer)
