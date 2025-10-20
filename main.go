@@ -10,6 +10,32 @@ import (
 func main() {
 	var path = "tests/test-files/"
 
+	fp, err := os.Open(path + "crossword.puz")
+	if err != nil {
+		panic(err)
+	}
+	defer fp.Close()
+
+	readBytes, err := io.ReadAll(fp)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%v\n", readBytes)
+
+	puzzle, err := puz.DecodePuz(readBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	encodedBytes, err := puz.EncodePuz(puzzle)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%v\n", encodedBytes)
+
+	return
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		panic(err)
@@ -52,7 +78,7 @@ func loadPuzzle(path string) (*puz.Puzzle, error) {
 		return nil, err
 	}
 
-	puzzle, err := puz.DecodePuz(bytes, false)
+	puzzle, err := puz.DecodePuz(bytes)
 	if err != nil {
 		return nil, err
 	}

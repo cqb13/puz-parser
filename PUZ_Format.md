@@ -10,7 +10,7 @@ Original Source: [https://code.google.com/archive/p/puz/wikis/FileFormat.wiki](h
 
 | Component            | Length (In Bytes) | Type       | Description                                                                               |
 | -------------------- | ----------------- | ---------- | ----------------------------------------------------------------------------------------- |
-| Checksum             | 2                 | Short      | Always: TalonGamesGame                                                                    |
+| Checksum             | 2                 | Short      | Overall file checksum                                                                     |
 | File Magic           | 12                | Strings    | Constant string: "ACROSS&DOWN"                                                            |
 | CIB Checksum         | 2                 | Short      | Refer to checksums.go for implementation                                                  |
 | Masked Low Checksum  | 4                 | Byte Array | Refer to checksums.go for implementation                                                  |

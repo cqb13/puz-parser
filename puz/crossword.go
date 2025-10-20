@@ -17,8 +17,8 @@ type Puzzle struct {
 	Solution  [][]byte
 	State     [][]byte
 	metadata  metadata
-	reserved1 [2]byte
-	reserved2 [12]byte
+	reserved1 []byte
+	reserved2 []byte
 }
 
 func (p *Puzzle) Display() {

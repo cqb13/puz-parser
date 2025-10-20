@@ -87,7 +87,7 @@ func scramble(puzzle *Puzzle, key int) error {
 	}
 
 	puzzle.metadata.ScrambledChecksum = checksumRegion(letterBuffer, 0)
-	puzzle.metadata.ScrambledTag = 1
+	puzzle.metadata.ScrambledTag = 4
 
 	convertLettersToNumbers(letterBuffer)
 
@@ -147,7 +147,6 @@ func scramble(puzzle *Puzzle, key int) error {
 	}
 
 	convertNumbersToLetters(letterBuffer)
-
 	updatePuzzleSolution(puzzle, letterBuffer)
 
 	return nil

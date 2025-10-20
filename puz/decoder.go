@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func DecodePuz(bytes []byte, ignoreChecksums bool) (*Puzzle, error) {
+func DecodePuz(bytes []byte) (*Puzzle, error) {
 	var puzzle Puzzle
 
 	reader := NewByteReader(bytes)
@@ -22,10 +22,6 @@ func DecodePuz(bytes []byte, ignoreChecksums bool) (*Puzzle, error) {
 	err = parseStringsSection(&reader, &puzzle)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse strings section: %s", err)
-	}
-
-	if ignoreChecksums {
-		return &puzzle, nil
 	}
 
 	computedChecksums := computeChecksums(bytes, puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
@@ -88,7 +84,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.reserved1 = [2]byte(reserved1)
+	puzzle.reserved1 = reserved1
 
 	scrambledChecksum, err := reader.ReadShort()
 	if err != nil {
@@ -101,7 +97,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.reserved2 = [12]byte(reserved2)
+	puzzle.reserved2 = reserved2
 
 	width, err := reader.ReadByte()
 	if err != nil {

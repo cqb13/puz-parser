@@ -60,19 +60,6 @@ func (r *ByteReader) ReadShort() (uint16, error) {
 	return parseShort(b), nil
 }
 
-func (r *ByteReader) Step() {
-	r.offset++
-}
-
-func (r *ByteReader) SetOffset(offset int) error {
-	if offset < 0 || offset > len(r.bytes) {
-		return errors.New("Invalid offset")
-	}
-
-	r.offset = offset
-	return nil
-}
-
 func parseShort(bytes []byte) uint16 {
 	return binary.LittleEndian.Uint16(bytes)
 }
