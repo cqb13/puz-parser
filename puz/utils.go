@@ -1,10 +1,13 @@
 package puz
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
+// TODO: use byte reader and make private
 type ByteReader struct {
 	bytes  []byte
 	offset int
@@ -66,4 +69,78 @@ func (r *ByteReader) ReadRemaining() []byte {
 
 func parseShort(bytes []byte) uint16 {
 	return binary.LittleEndian.Uint16(bytes)
+}
+
+type byteWriter struct {
+	buffer bytes.Buffer
+}
+
+func newByteWriter() *byteWriter {
+	return &byteWriter{
+		bytes.Buffer{},
+	}
+}
+
+func (w *byteWriter) WriteString(str string) {
+	w.buffer.WriteString(str)
+	w.buffer.WriteByte(0x00)
+}
+
+func (w *byteWriter) WritePlaceholder(amount int) {
+	b := make([]byte, amount)
+
+	for i := range b {
+		b[i] = 0x00
+	}
+
+	w.buffer.Write(b)
+}
+
+func (w *byteWriter) WriteBytes(bytes []byte) {
+	w.buffer.Write(bytes)
+}
+
+func (w *byteWriter) WriteShort(short uint16) {
+	b := make([]byte, 2)
+
+	binary.LittleEndian.PutUint16(b, short)
+
+	w.buffer.Write(b)
+}
+
+func (w *byteWriter) WriteByte(b byte) {
+	w.buffer.WriteByte(b)
+}
+
+func (w *byteWriter) Bytes() []byte {
+	return w.buffer.Bytes()
+}
+
+func (w *byteWriter) OverWrite(offset int, newBytes []byte) error {
+	data := w.buffer.Bytes()
+
+	if offset < 0 || offset > len(data) {
+		return fmt.Errorf("Offset %d out of range [0, %d]", offset, len(data))
+	}
+
+	if offset+len(newBytes) > len(data) {
+		return fmt.Errorf("Overwrite would exceed buffer length")
+	}
+
+	copy(data[offset:], newBytes)
+
+	return nil
+}
+
+func (w *byteWriter) OverwriteShort(offset int, short uint16) error {
+	b := make([]byte, 2)
+
+	binary.LittleEndian.PutUint16(b, short)
+
+	err := w.OverWrite(offset, b)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
