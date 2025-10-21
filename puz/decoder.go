@@ -24,6 +24,9 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 		return nil, fmt.Errorf("Failed to parse strings section: %s", err)
 	}
 
+	postscript := reader.ReadRemaining()
+	puzzle.postscript = postscript
+
 	computedChecksums := computeChecksums(bytes, puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {

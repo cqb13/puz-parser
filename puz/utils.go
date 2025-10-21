@@ -60,6 +60,10 @@ func (r *ByteReader) ReadShort() (uint16, error) {
 	return parseShort(b), nil
 }
 
+func (r *ByteReader) ReadRemaining() []byte {
+	return r.bytes[r.offset:len(r.bytes)]
+}
+
 func parseShort(bytes []byte) uint16 {
 	return binary.LittleEndian.Uint16(bytes)
 }

@@ -5,20 +5,22 @@ import "fmt"
 const file_magic = "ACROSS&DOWN"
 
 type Puzzle struct {
-	Title     string
-	Author    string
-	Copyright string
-	Notes     string
-	Width     uint8
-	Height    uint8
-	Size      int
-	NumClues  uint16
-	Clues     []string
-	Solution  [][]byte
-	State     [][]byte
-	metadata  metadata
-	reserved1 []byte
-	reserved2 []byte
+	Title      string
+	Author     string
+	Copyright  string
+	Notes      string
+	Width      uint8
+	Height     uint8
+	Size       int
+	NumClues   uint16
+	Clues      []string
+	Solution   [][]byte
+	State      [][]byte
+	metadata   metadata
+	reserved1  []byte
+	reserved2  []byte
+	preamble   []byte
+	postscript []byte
 }
 
 func (p *Puzzle) Display() {
@@ -77,6 +79,16 @@ func (p *Puzzle) Scramble(key int) error {
 
 func (p *Puzzle) GetMetadata() metadata {
 	return p.metadata
+}
+
+func (p *Puzzle) SetVersion(version string) error {
+	if len(version) != 3 {
+		return fmt.Errorf("Invalid version format, must be X.X")
+	}
+
+	p.metadata.Version = version + "\x00"
+
+	return nil
 }
 
 type metadata struct {

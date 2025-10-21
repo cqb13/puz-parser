@@ -7,6 +7,16 @@ import (
 	"os"
 )
 
+func displayHex(bytes []byte) {
+	for i, b := range bytes {
+		fmt.Printf("%02X ", b)
+		if (i+1)%16 == 0 {
+			fmt.Printf("\n")
+		}
+	}
+	fmt.Println()
+}
+
 func main() {
 	var path = "tests/test-files/"
 
@@ -21,7 +31,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%v\n", readBytes)
+	displayHex(readBytes)
 
 	puzzle, err := puz.DecodePuz(readBytes)
 	if err != nil {
@@ -32,8 +42,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	puzzle.Display()
 
-	fmt.Printf("%v\n", encodedBytes)
+	fmt.Println()
+	displayHex(encodedBytes)
 
 	return
 	entries, err := os.ReadDir(path)
