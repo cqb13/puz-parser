@@ -7,20 +7,19 @@ import (
 	"fmt"
 )
 
-// TODO: use byte reader and make private
-type ByteReader struct {
+type byteReader struct {
 	bytes  []byte
 	offset int
 }
 
-func NewByteReader(bytes []byte) ByteReader {
-	return ByteReader{
+func newByteReader(bytes []byte) byteReader {
+	return byteReader{
 		bytes,
 		0,
 	}
 }
 
-func (r *ByteReader) Read(amount int) ([]byte, error) {
+func (r *byteReader) Read(amount int) ([]byte, error) {
 	if r.offset+amount > len(r.bytes) {
 		return nil, errors.New("Out of bounds")
 	}
@@ -30,7 +29,7 @@ func (r *ByteReader) Read(amount int) ([]byte, error) {
 	return r.bytes[start:r.offset], nil
 }
 
-func (r *ByteReader) ReadStr() string {
+func (r *byteReader) ReadStr() string {
 	var bytes []byte
 
 	for i := r.offset; i < len(r.bytes) && r.bytes[i] != 0x00; i++ {
@@ -43,7 +42,7 @@ func (r *ByteReader) ReadStr() string {
 	return string(bytes)
 }
 
-func (r *ByteReader) ReadByte() (byte, error) {
+func (r *byteReader) ReadByte() (byte, error) {
 	b, err := r.Read(1)
 	if err != nil {
 		return 0, err
@@ -51,11 +50,11 @@ func (r *ByteReader) ReadByte() (byte, error) {
 	return b[0], nil
 }
 
-func (r *ByteReader) Len() int {
+func (r *byteReader) Len() int {
 	return len(r.bytes)
 }
 
-func (r *ByteReader) ReadShort() (uint16, error) {
+func (r *byteReader) ReadShort() (uint16, error) {
 	b, err := r.Read(2)
 	if err != nil {
 		return 0, err
@@ -63,7 +62,7 @@ func (r *ByteReader) ReadShort() (uint16, error) {
 	return parseShort(b), nil
 }
 
-func (r *ByteReader) ReadRemaining() []byte {
+func (r *byteReader) ReadRemaining() []byte {
 	return r.bytes[r.offset:len(r.bytes)]
 }
 

@@ -7,7 +7,7 @@ import (
 func DecodePuz(bytes []byte) (*Puzzle, error) {
 	var puzzle Puzzle
 
-	reader := NewByteReader(bytes)
+	reader := newByteReader(bytes)
 
 	foundChecksums, err := parseHeader(&reader, &puzzle)
 	if err != nil {
@@ -48,7 +48,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	return &puzzle, nil
 }
 
-func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
+func parseHeader(reader *byteReader, puzzle *Puzzle) (*checksums, error) {
 	if reader.Len() < 52 {
 		return nil, fmt.Errorf("Not enough data, expected header length of 52 bytes, found %d", reader.Len())
 	}
@@ -142,7 +142,7 @@ func parseHeader(reader *ByteReader, puzzle *Puzzle) (*checksums, error) {
 	return &foundChecksums, nil
 }
 
-func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
+func parseSolutionAndState(reader *byteReader, puzzle *Puzzle) error {
 	expectedLen := reader.offset + puzzle.Size*2
 
 	if expectedLen > reader.Len() {
@@ -165,7 +165,7 @@ func parseSolutionAndState(reader *ByteReader, puzzle *Puzzle) error {
 	return nil
 }
 
-func parseBoard(reader *ByteReader, width int, height int) ([][]byte, error) {
+func parseBoard(reader *byteReader, width int, height int) ([][]byte, error) {
 	var board [][]byte
 
 	for range height {
@@ -180,7 +180,7 @@ func parseBoard(reader *ByteReader, width int, height int) ([][]byte, error) {
 	return board, nil
 }
 
-func parseStringsSection(reader *ByteReader, puzzle *Puzzle) error {
+func parseStringsSection(reader *byteReader, puzzle *Puzzle) error {
 	title := reader.ReadStr()
 	puzzle.Title = title
 	author := reader.ReadStr()
