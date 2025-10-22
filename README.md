@@ -13,6 +13,35 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 - Write proper tests
 - Support extra sections
 
+## Installation
+
+```sh
+go get github.com/cqb13/puz-parser/puz
+```
+
+## Basic Usage
+
+```go
+import (
+    "github.com/cqb13/puz-parser/puz"
+)
+
+func main() {
+    // get the bytes from a file
+
+    puzzle, err := puz.DecodePuz(fileBytes)
+    if err != nil {
+		panic(err)
+    }
+
+    encodedBytes, err := puz.EncodePuz(puzzle)
+    if err != nil {
+		panic(err)
+    }
+}
+
+```
+
 ## Acknowledgments
 
 This project would not be possible without the help of the following:
