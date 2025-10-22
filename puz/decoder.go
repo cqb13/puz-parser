@@ -9,6 +9,13 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	reader := newByteReader(bytes)
 
+	fileMagicIndex := reader.Index([]byte(file_magic))
+	if fileMagicIndex == -1 {
+		return nil, fmt.Errorf("Failed to find file magic")
+	}
+	preamble, err := reader.Read(fileMagicIndex - 2)
+	puzzle.preamble = preamble
+
 	foundChecksums, err := parseHeader(&reader, &puzzle)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse header: %s", err)
@@ -27,7 +34,8 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	postscript := reader.ReadRemaining()
 	puzzle.postscript = postscript
 
-	computedChecksums := computeChecksums(bytes, puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	// bytes[len(preamble):len(reader.bytes)-len(postscript)] to ensure only the actual data is checksummed
+	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
 		return nil, fmt.Errorf("CIB Checksum mismatch, found %d, computed %d", foundChecksums.cibChecksum, computedChecksums.cibChecksum)

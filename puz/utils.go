@@ -42,6 +42,15 @@ func (r *byteReader) ReadStr() string {
 	return string(bytes)
 }
 
+func (r *byteReader) Index(target []byte) int {
+	index := bytes.Index(r.bytes, target)
+	if index == -1 {
+		return -1
+	}
+
+	return index
+}
+
 func (r *byteReader) ReadByte() (byte, error) {
 	b, err := r.Read(1)
 	if err != nil {

@@ -5,6 +5,8 @@ import "fmt"
 func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer := newByteWriter()
 
+	writer.WriteBytes(puzzle.preamble)
+
 	err := encodeHeader(puzzle, writer)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to encode header: %s", err)
@@ -22,24 +24,26 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 
 	writer.WriteBytes(puzzle.postscript)
 
-	computedChecksums := computeChecksums(writer.Bytes(), puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	bodyBytes := writer.Bytes()[len(puzzle.preamble) : len(writer.Bytes())-len(puzzle.postscript)]
+	computedChecksums := computeChecksums(bodyBytes, puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
-	err = writer.OverwriteShort(0, computedChecksums.checksum)
+	preambleOffset := len(puzzle.preamble)
+	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to insert checksum: %s", err)
 	}
 
-	err = writer.OverwriteShort(14, computedChecksums.cibChecksum)
+	err = writer.OverwriteShort(preambleOffset+14, computedChecksums.cibChecksum)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to insert CIB checksum: %s", err)
 	}
 
-	err = writer.OverWrite(16, computedChecksums.maskedLowChecksum[:])
+	err = writer.OverWrite(preambleOffset+16, computedChecksums.maskedLowChecksum[:])
 	if err != nil {
 		return nil, fmt.Errorf("Failed to insert Masked Low checksum: %s", err)
 	}
 
-	err = writer.OverWrite(20, computedChecksums.maskedHighChecksum[:])
+	err = writer.OverWrite(preambleOffset+20, computedChecksums.maskedHighChecksum[:])
 	if err != nil {
 		return nil, fmt.Errorf("Failed to insert Masked High checksum: %s", err)
 	}
@@ -72,10 +76,6 @@ func encodeHeader(puzzle *Puzzle, writer *byteWriter) error {
 	writer.WriteShort(puzzle.NumClues)
 	writer.WriteShort(puzzle.metadata.Bitmask)
 	writer.WriteShort(puzzle.metadata.ScrambledTag)
-
-	if len(writer.Bytes()) != 52 {
-		return fmt.Errorf("Incorrect header length, expected 52 bytes, wrote %d", len(writer.Bytes()))
-	}
 
 	return nil
 }
