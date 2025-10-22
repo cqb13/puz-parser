@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"dev/cqb13/puz-reader/puz"
+	"dev/cqb13/puz-parser/puz"
 	"fmt"
 	"io"
 	"os"
