@@ -60,6 +60,10 @@ func (p *Puzzle) Scrambled() bool {
 }
 
 func (p *Puzzle) Unscramble(key int) error {
+	if !p.Scrambled() {
+		return fmt.Errorf("Puzzle is already unscrambled")
+	}
+
 	err := unscramble(p, key)
 	if err != nil {
 		return fmt.Errorf("Failed to unscramble crossword: %s", err)
@@ -69,6 +73,10 @@ func (p *Puzzle) Unscramble(key int) error {
 }
 
 func (p *Puzzle) Scramble(key int) error {
+	if p.Scrambled() {
+		return fmt.Errorf("Puzzle is already scrambled")
+	}
+
 	err := scramble(p, key)
 	if err != nil {
 		return fmt.Errorf("Failed to unscramble crossword: %s", err)
