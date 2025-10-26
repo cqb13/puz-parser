@@ -4,51 +4,44 @@ import "fmt"
 
 const file_magic = "ACROSS&DOWN"
 
+type ExtraSection int
+
+const (
+	GRBS ExtraSection = iota // Rebus data
+	RTBL                     // Rebus solution table
+	LTIM                     // Timer
+	GEXT                     // Cell style attributes
+	RUSR                     // User rebus entries
+)
+
+type GEXTValue byte
+
+const (
+	PreviouslyIncorrect = 0x10
+	CurrentlyIncorrect  = 0x20
+	ContentGiven        = 0x40
+	SquareCircled       = 0x80
+)
+
 type Puzzle struct {
-	Title      string
-	Author     string
-	Copyright  string
-	Notes      string
-	Width      uint8
-	Height     uint8
-	Size       int
-	NumClues   uint16
-	Clues      []string
-	Solution   [][]byte
-	State      [][]byte
-	metadata   metadata
-	reserved1  []byte
-	reserved2  []byte
-	preamble   []byte
-	postscript []byte
-}
-
-func (p *Puzzle) Display() {
-	fmt.Println(p.String())
-}
-
-func (p *Puzzle) String() string {
-	str := fmt.Sprintf("Title: %s\nAuthor: %s\nCopyright: %s\nNotes: %s\nVersion: %s\nSize: %dx%d\nClues:\n", p.Title, p.Author, p.Copyright, p.Notes, p.metadata.Version, p.Width, p.Height)
-	for i, clue := range p.Clues {
-		str += fmt.Sprintf("\t%d. %s\n", i+1, clue)
-	}
-	str += "Solution:\n"
-	for _, row := range p.Solution {
-		str += "\t"
-		for _, letter := range row {
-			str += string(letter) + " "
-		}
-		str += "\n"
-	}
-	str += "State:\n"
-	for _, row := range p.State {
-		str += "\t"
-		for _, letter := range row {
-			str += string(letter) + " "
-		}
-		str += "\n"
-	}
-	return str
+	Title             string
+	Author            string
+	Copyright         string
+	Notes             string
+	Width             uint8
+	Height            uint8
+	Size              int
+	NumClues          uint16
+	Clues             []string
+	Solution          [][]byte
+	State             [][]byte
+	extraSectionOrder []ExtraSection
+	ExtraSections     ExtraSections
+	metadata          metadata
+	reserved1         []byte
+	reserved2         []byte
+	preamble          []byte
+	postscript        []byte
 }
 
 func (p *Puzzle) Scrambled() bool {
@@ -99,9 +92,23 @@ func (p *Puzzle) SetVersion(version string) error {
 	return nil
 }
 
+// ExtraSections holds optional data sections. Any field may be nil if not set.
+type ExtraSections struct {
+	GRBS [][]byte
+	RTBL map[int]string
+	LTIM *TimerData
+	GEXT [][]byte
+	RUSR map[int]string
+}
+
+type TimerData struct {
+	SecondsPassed int
+	Running       bool
+}
+
 type metadata struct {
 	Version           string
 	Bitmask           uint16
 	ScrambledTag      uint16
-	ScrambledChecksum uint16
+	scrambledChecksum uint16
 }

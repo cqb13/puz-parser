@@ -10,8 +10,8 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 
 ## TODO
 
-- Write proper tests
 - Support extra sections
+- Better errors
 
 ## Installation
 

@@ -101,7 +101,7 @@ func parseHeader(reader *byteReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.metadata.ScrambledChecksum = scrambledChecksum
+	puzzle.metadata.scrambledChecksum = scrambledChecksum
 
 	// not used in most files
 	reserved2, err := reader.Read(12)
