@@ -86,7 +86,7 @@ func scramble(puzzle *Puzzle, key int) error {
 		return fmt.Errorf("Too few characters to scramble, minimum 12, found %d", totalLetters)
 	}
 
-	puzzle.metadata.ScrambledChecksum = checksumRegion(letterBuffer, 0)
+	puzzle.metadata.scrambledChecksum = checksumRegion(letterBuffer, 0)
 	puzzle.metadata.ScrambledTag = 4
 
 	convertLettersToNumbers(letterBuffer)
@@ -223,13 +223,13 @@ func unscramble(puzzle *Puzzle, key int) error {
 
 	convertNumbersToLetters(letterBuffer)
 
-	if checksumRegion(letterBuffer, 0) != puzzle.metadata.ScrambledChecksum {
+	if checksumRegion(letterBuffer, 0) != puzzle.metadata.scrambledChecksum {
 		return fmt.Errorf("Incorrect key provided, checksum mismatch")
 	}
 
 	updatePuzzleSolution(puzzle, letterBuffer)
 	puzzle.metadata.ScrambledTag = 0
-	puzzle.metadata.ScrambledChecksum = 0x0000
+	puzzle.metadata.scrambledChecksum = 0x0000
 
 	return nil
 }

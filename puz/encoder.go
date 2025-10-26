@@ -69,7 +69,7 @@ func encodeHeader(puzzle *Puzzle, writer *byteWriter) error {
 	writer.WritePlaceholder(10)
 	writer.WriteBytes([]byte(puzzle.metadata.Version)) // not using write str because it already has the null terminator
 	writer.WriteBytes(puzzle.reserved1)
-	writer.WriteShort(puzzle.metadata.ScrambledChecksum)
+	writer.WriteShort(puzzle.metadata.scrambledChecksum)
 	writer.WriteBytes(puzzle.reserved2)
 	writer.WriteByte(puzzle.Width)
 	writer.WriteByte(puzzle.Height)
