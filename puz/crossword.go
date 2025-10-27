@@ -14,6 +14,19 @@ const (
 	RUSR                     // User rebus entries
 )
 
+var sectionMap = map[string]ExtraSection{
+	"GRBS": GRBS,
+	"RTBL": RTBL,
+	"LTIM": LTIM,
+	"GEXT": GEXT,
+	"RUSR": RUSR,
+}
+
+func GetSectionFromString(s string) (ExtraSection, bool) {
+	section, ok := sectionMap[s]
+	return section, ok
+}
+
 type GEXTValue byte
 
 const (
@@ -95,10 +108,15 @@ func (p *Puzzle) SetVersion(version string) error {
 // ExtraSections holds optional data sections. Any field may be nil if not set.
 type ExtraSections struct {
 	GRBS [][]byte
-	RTBL map[int]string
+	RTBL []RebusEntry
 	LTIM *TimerData
 	GEXT [][]byte
-	RUSR map[int]string
+	RUSR []RebusEntry
+}
+
+type RebusEntry struct {
+	Key   int
+	Value string
 }
 
 type TimerData struct {

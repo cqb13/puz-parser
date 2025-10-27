@@ -9,17 +9,17 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 
 	err := encodeHeader(puzzle, writer)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to encode header: %s", err)
+		return nil, fmt.Errorf("Failed to encode header: %w", err)
 	}
 
 	err = encodeSolutionAndState(puzzle, writer)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to encode solution and state: %s", err)
+		return nil, fmt.Errorf("Failed to encode solution and state: %w", err)
 	}
 
 	err = encodeStringsSection(puzzle, writer)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to encode strings section: %s", err)
+		return nil, fmt.Errorf("Failed to encode strings section: %w", err)
 	}
 
 	writer.WriteBytes(puzzle.postscript)
@@ -30,36 +30,28 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	preambleOffset := len(puzzle.preamble)
 	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to insert checksum: %s", err)
+		return nil, err
 	}
 
 	err = writer.OverwriteShort(preambleOffset+14, computedChecksums.cibChecksum)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to insert CIB checksum: %s", err)
+		return nil, err
 	}
 
 	err = writer.OverWrite(preambleOffset+16, computedChecksums.maskedLowChecksum[:])
 	if err != nil {
-		return nil, fmt.Errorf("Failed to insert Masked Low checksum: %s", err)
+		return nil, err
 	}
 
 	err = writer.OverWrite(preambleOffset+20, computedChecksums.maskedHighChecksum[:])
 	if err != nil {
-		return nil, fmt.Errorf("Failed to insert Masked High checksum: %s", err)
+		return nil, err
 	}
 
 	return writer.Bytes(), nil
 }
 
-func encodeHeader(puzzle *Puzzle, writer *byteWriter) error {
-	if len(puzzle.reserved1) != 2 {
-		return fmt.Errorf("Incorrect amount of bytes in first reserved section, expected 2, found %d", len(puzzle.reserved1))
-	}
-
-	if len(puzzle.reserved2) != 12 {
-		return fmt.Errorf("Incorrect amount of bytes in second reserved section, expected 12, found %d", len(puzzle.reserved2))
-	}
-
+func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	// placeholder for file checksum, computed and inserted later
 	writer.WritePlaceholder(2)
 
@@ -80,7 +72,8 @@ func encodeHeader(puzzle *Puzzle, writer *byteWriter) error {
 	return nil
 }
 
-func encodeSolutionAndState(puzzle *Puzzle, writer *byteWriter) error {
+func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) error {
+	//TODO: add errors for these
 	if len(puzzle.Solution) != int(puzzle.Height) {
 		return fmt.Errorf("Height mismatch, expected solution height of %d, found %d", puzzle.Height, len(puzzle.Solution))
 	}
@@ -106,9 +99,9 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *byteWriter) error {
 	return nil
 }
 
-func encodeStringsSection(puzzle *Puzzle, writer *byteWriter) error {
+func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 	if len(puzzle.Clues) != int(puzzle.NumClues) {
-		return fmt.Errorf("Expected %d clues, found %d", puzzle.NumClues, len(puzzle.Clues))
+		return ErrClueCountMismatch
 	}
 
 	writer.WriteString(puzzle.Title)
