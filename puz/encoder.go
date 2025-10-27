@@ -3,7 +3,7 @@ package puz
 import "fmt"
 
 func EncodePuz(puzzle *Puzzle) ([]byte, error) {
-	writer := newByteWriter()
+	writer := newPuzzleWriter()
 
 	writer.WriteBytes(puzzle.preamble)
 
