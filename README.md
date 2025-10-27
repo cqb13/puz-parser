@@ -4,13 +4,13 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 
 ## Features
 
-- Encode and Decode .PUZ Files
-- Unscramble and Re-scramble .PUZ files
-- Preserve all data
+- Encodes and Decodes .PUZ Files
+- Supports Extra Sections
+- Unscrambles and Re-scrambles .PUZ files
+- Preserves all data
 
 ## TODO
 
-- Support extra sections
 - Better errors
 
 ## Installation
