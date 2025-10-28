@@ -11,7 +11,11 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 
 ## TODO
 
+- Tests for extra sections
+- Type abstractions for extra sections elements and game solution/state
+- Ability to build puzzles easily
 - Better errors
+- Docs
 
 ## Installation
 

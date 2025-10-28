@@ -9,8 +9,11 @@ import (
 
 func TestDecodeAndEncode(t *testing.T) {
 	testCases := []string{
-		"Crossword.puz",
+		"Crossword-EXT-Rebus.puz",
+		"Crossword-PreAndPost-Scrambled.puz",
 		"Crossword-PreAndPost.puz",
+		"Crossword-PreAndPost.puz",
+		"Crossword.puz",
 	}
 
 	for _, name := range testCases {
