@@ -22,6 +22,11 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to encode strings section: %w", err)
 	}
 
+	err = encodeExtraSections(puzzle, writer)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to encode extra sections: %w", err)
+	}
+
 	writer.WriteBytes(puzzle.postscript)
 
 	bodyBytes := writer.Bytes()[len(puzzle.preamble) : len(writer.Bytes())-len(puzzle.postscript)]
@@ -65,7 +70,7 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	writer.WriteBytes(puzzle.reserved2)
 	writer.WriteByte(puzzle.Width)
 	writer.WriteByte(puzzle.Height)
-	writer.WriteShort(puzzle.NumClues)
+	writer.WriteShort(puzzle.numClues)
 	writer.WriteShort(puzzle.metadata.Bitmask)
 	writer.WriteShort(puzzle.metadata.ScrambledTag)
 
@@ -73,34 +78,24 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 }
 
 func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) error {
-	//TODO: add errors for these
-	if len(puzzle.Solution) != int(puzzle.Height) {
-		return fmt.Errorf("Height mismatch, expected solution height of %d, found %d", puzzle.Height, len(puzzle.Solution))
+	//TODO: specify which board failed in err
+	board, err := joinBoard(puzzle.Solution, int(puzzle.Width), int(puzzle.Height))
+	if err != nil {
+		return err
 	}
+	writer.WriteBytes(board)
 
-	if len(puzzle.State) != int(puzzle.Height) {
-		return fmt.Errorf("Height mismatch, expected state height of %d, found %d", puzzle.Height, len(puzzle.State))
+	board, err = joinBoard(puzzle.State, int(puzzle.Width), int(puzzle.Height))
+	if err != nil {
+		return err
 	}
-
-	for i, row := range puzzle.Solution {
-		if len(row) != int(puzzle.Width) {
-			return fmt.Errorf("Width mismatch, expected width of %d in solution row %d, found %d", puzzle.Width, i+1, len(row))
-		}
-		writer.WriteBytes(row)
-	}
-
-	for i, row := range puzzle.State {
-		if len(row) != int(puzzle.Width) {
-			return fmt.Errorf("Width mismatch, expected width of %d in state row %d, found %d", puzzle.Width, i+1, len(row))
-		}
-		writer.WriteBytes(row)
-	}
+	writer.WriteBytes(board)
 
 	return nil
 }
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
-	if len(puzzle.Clues) != int(puzzle.NumClues) {
+	if len(puzzle.Clues) != int(puzzle.numClues) {
 		return ErrClueCountMismatch
 	}
 
@@ -113,4 +108,88 @@ func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 	writer.WriteString(puzzle.Notes)
 
 	return nil
+}
+
+// TODO: specify which section is missing
+func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
+	for _, section := range puzzle.extraSectionOrder {
+		name, ok := GetStrFromSection(section)
+		if !ok {
+			return ErrUknownExtraSectionName
+		}
+
+		var data []byte
+
+		switch section {
+		case GRBS:
+			if puzzle.ExtraSections.GRBS == nil {
+				return ErrMissingExtraSection
+			}
+
+			board, err := joinBoard(puzzle.ExtraSections.GRBS, int(puzzle.Width), int(puzzle.Height))
+			if err != nil {
+				return err
+			}
+			data = board
+		case RTBL:
+			if puzzle.ExtraSections.RTBL == nil {
+				return ErrMissingExtraSection
+			}
+
+			for _, entry := range puzzle.ExtraSections.RTBL {
+				data = append(data, entry.ToBytes()...)
+			}
+		case LTIM:
+			if puzzle.ExtraSections.LTIM == nil {
+				return ErrMissingExtraSection
+			}
+			data = puzzle.ExtraSections.LTIM.ToBytes()
+		case GEXT:
+			if puzzle.ExtraSections.GEXT == nil {
+				return ErrMissingExtraSection
+			}
+			board, err := joinBoard(puzzle.ExtraSections.GEXT, int(puzzle.Width), int(puzzle.Height))
+			if err != nil {
+				return err
+			}
+			data = board
+		case RUSR:
+			if puzzle.ExtraSections.RUSR == nil {
+				return ErrMissingExtraSection
+			}
+
+			for _, entry := range puzzle.ExtraSections.RUSR {
+				data = append(data, entry.ToBytes()...)
+			}
+		}
+
+		sectionLength := uint16(len(data))
+		checksum := checksumRegion(data, 0x00)
+
+		// name str should not have a null terminator
+		writer.WriteBytes([]byte(name))
+		writer.WriteShort(sectionLength)
+		writer.WriteShort(checksum)
+		writer.WriteBytes(data)
+		writer.WriteByte(0x00)
+	}
+
+	return nil
+}
+
+func joinBoard(board [][]byte, width int, height int) ([]byte, error) {
+	if len(board) != height {
+		return nil, ErrBoardHeightMismatch
+	}
+	var data []byte
+
+	for _, row := range board {
+		if len(row) != width {
+			return nil, ErrBoardWidthMismatch
+		}
+
+		data = append(data, row...)
+	}
+
+	return data, nil
 }

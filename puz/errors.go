@@ -15,4 +15,7 @@ var (
 	ErrExtraSectionChecksumMismatch = errors.New("Extra Section Checksum mismatch")
 	ErrDuplicateExtraSection        = errors.New("A duplicate extra section was found")
 	ErrUknownExtraSectionName       = errors.New("Unknown extra section name")
+	ErrMissingExtraSection          = errors.New("An extra section was expected but not found")
+	ErrBoardHeightMismatch          = errors.New("Board height did not match expected board height")
+	ErrBoardWidthMismatch           = errors.New("Board width did not match expected board width")
 )

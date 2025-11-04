@@ -143,7 +143,7 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.NumClues = clueCount
+	puzzle.numClues = clueCount
 
 	bitmask, err := reader.ReadShort()
 	if err != nil {
@@ -215,12 +215,12 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 
 	var clues []string
 
-	for range puzzle.NumClues {
+	for range puzzle.numClues {
 		clue := reader.ReadStr()
 		clues = append(clues, clue)
 	}
 
-	if len(clues) != int(puzzle.NumClues) {
+	if len(clues) != int(puzzle.numClues) {
 		return ErrClueCountMismatch
 	}
 
