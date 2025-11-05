@@ -1,56 +1,30 @@
 package puz
 
-type Board struct {
-	Board  [][]byte
-	width  int
-	height int
-}
+type Board [][]byte
 
-func NewBoardFromBytes(bytes [][]byte) *Board {
-	return &Board{
-		bytes,
-		len(bytes[0]),
-		len(bytes),
-	}
-}
-
-func NewBoard(width int, height int) *Board {
-	board := make([][]byte, height)
-
-	for y := range height {
-		board[y] = make([]byte, width)
-		for x := range width {
-			board[y][x] = ' '
-		}
-	}
-
-	return &Board{
-		board,
-		width,
-		height,
-	}
-}
-
-func (board *Board) inBounds(x int, y int) bool {
-	if x < 0 || y < 0 || y >= board.height || x >= board.width {
+func (board Board) inBounds(x int, y int) bool {
+	if x < 0 || y < 0 || y >= len(board) || x >= len(board[y]) {
 		return false
 	}
 
 	return true
 }
 
-func (board *Board) isStartOfWord(x int, y int, dir Direction) bool {
-	if !board.inBounds(x, y) || board.Board[y][x] == BLACK_SQUARE {
+func (board Board) isStartOfWord(x int, y int, dir Direction) bool {
+	if !board.inBounds(x, y) || board[y][x] == BLACK_SQUARE {
 		return false
 	}
 
+	height := len(board)
+	width := len(board[y])
+
 	// for across if cell is on edge or has black square to the left and has at least 1 cell to the right without a blacks square
-	if dir == ACROSS && (x == 0 || (x-1 >= 0 && board.Board[y][x-1] == BLACK_SQUARE)) && (x+1 < board.width && board.Board[y][x+1] != BLACK_SQUARE) {
+	if dir == ACROSS && (x == 0 || (x-1 >= 0 && board[y][x-1] == BLACK_SQUARE)) && (x+1 < width && board[y][x+1] != BLACK_SQUARE) {
 		return true
 	}
 
 	// for down if a cell is on edge or has a black square above it and has at least 1 cell bellow without a black square
-	if dir == DOWN && (y == 0 || (y-1 >= 0 && board.Board[y-1][x] == BLACK_SQUARE)) && (y+1 < board.height && board.Board[y+1][x] != BLACK_SQUARE) {
+	if dir == DOWN && (y == 0 || (y-1 >= 0 && board[y-1][x] == BLACK_SQUARE)) && (y+1 < height && board[y+1][x] != BLACK_SQUARE) {
 		return true
 	}
 
@@ -58,7 +32,7 @@ func (board *Board) isStartOfWord(x int, y int, dir Direction) bool {
 }
 
 // Returns ok if a word of the given length can be placed at a position, not ok if the length of the wword is greater than the width/height of the board, or the word will cross a black square while placing
-func (board *Board) CanPlace(wordLen int, x int, y int, dir Direction) bool {
+func (board Board) CanPlace(wordLen int, x int, y int, dir Direction) bool {
 	if !board.inBounds(x, y) {
 		return false
 	}
@@ -74,7 +48,7 @@ func (board *Board) CanPlace(wordLen int, x int, y int, dir Direction) bool {
 
 	// make sure the word wont run into any black squares
 	for range wordLen {
-		if board.Board[yOffset][xOffset] == BLACK_SQUARE {
+		if board[yOffset][xOffset] == BLACK_SQUARE {
 			return false
 		}
 
@@ -89,7 +63,7 @@ func (board *Board) CanPlace(wordLen int, x int, y int, dir Direction) bool {
 }
 
 // Places the word in the grid. Not ok if the length of the wword is greater than the width/height of the board, or the word will cross a black square while placing
-func (board *Board) PlaceWord(word string, x int, y int, dir Direction) bool {
+func (board Board) PlaceWord(word string, x int, y int, dir Direction) bool {
 	if !board.CanPlace(len(word), x, y, dir) {
 		return false
 	}
@@ -98,7 +72,7 @@ func (board *Board) PlaceWord(word string, x int, y int, dir Direction) bool {
 	yOffset := y
 
 	for _, char := range []byte(word) {
-		board.Board[yOffset][xOffset] = char
+		board[yOffset][xOffset] = char
 
 		if dir == ACROSS {
 			xOffset++
@@ -111,7 +85,7 @@ func (board *Board) PlaceWord(word string, x int, y int, dir Direction) bool {
 }
 
 // Returns ok and the word if a word is found to start at the location x, y
-func (board *Board) GetWord(x int, y int, dir Direction) (string, bool) {
+func (board Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	if !board.isStartOfWord(x, y, dir) {
 		return "", false
 	}
@@ -119,15 +93,15 @@ func (board *Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	word := ""
 
 	for {
-		if x >= board.width || y >= board.height || x < 0 || y < 0 {
+		if y >= len(board) || x >= len(board[y]) || x < 0 || y < 0 {
 			break
 		}
 
-		if board.Board[y][x] == BLACK_SQUARE {
+		if board[y][x] == BLACK_SQUARE {
 			break
 		}
 
-		word += string(board.Board[y][x])
+		word += string(board[y][x])
 
 		if dir == ACROSS {
 			x++
@@ -144,10 +118,10 @@ func (board *Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	return word, true
 }
 
-func (board *Board) GetWords(dir Direction) []string {
+func (board Board) GetWords(dir Direction) []string {
 	var words []string
-	for y := range board.height {
-		for x := range board.width {
+	for y := range len(board) {
+		for x := range len(board[y]) {
 			word, ok := board.GetWord(x, y, dir)
 			if !ok {
 				continue
@@ -158,8 +132,4 @@ func (board *Board) GetWords(dir Direction) []string {
 	}
 
 	return words
-}
-
-func (board *Board) MatchCluesToWords(clues []string) *Clues {
-	return nil
 }

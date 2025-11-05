@@ -121,44 +121,44 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 		var data []byte
 
 		switch section {
-		case GRBS:
-			if puzzle.ExtraSections.GRBS == nil {
+		case RebusBoard:
+			if puzzle.ExtraSections.RebusBoard == nil {
 				return ErrMissingExtraSection
 			}
 
-			board, err := joinBoard(puzzle.ExtraSections.GRBS, int(puzzle.Width), int(puzzle.Height))
+			board, err := joinBoard(puzzle.ExtraSections.RebusBoard, int(puzzle.Width), int(puzzle.Height))
 			if err != nil {
 				return err
 			}
 			data = board
-		case RTBL:
-			if puzzle.ExtraSections.RTBL == nil {
+		case RebusTable:
+			if puzzle.ExtraSections.RebusTable == nil {
 				return ErrMissingExtraSection
 			}
 
-			for _, entry := range puzzle.ExtraSections.RTBL {
+			for _, entry := range puzzle.ExtraSections.RebusTable {
 				data = append(data, entry.ToBytes()...)
 			}
-		case LTIM:
-			if puzzle.ExtraSections.LTIM == nil {
+		case Timer:
+			if puzzle.ExtraSections.Timer == nil {
 				return ErrMissingExtraSection
 			}
-			data = puzzle.ExtraSections.LTIM.ToBytes()
-		case GEXT:
-			if puzzle.ExtraSections.GEXT == nil {
+			data = puzzle.ExtraSections.Timer.ToBytes()
+		case MarkupBoard:
+			if puzzle.ExtraSections.MarkupBoard == nil {
 				return ErrMissingExtraSection
 			}
-			board, err := joinBoard(puzzle.ExtraSections.GEXT, int(puzzle.Width), int(puzzle.Height))
+			board, err := joinBoard(puzzle.ExtraSections.MarkupBoard, int(puzzle.Width), int(puzzle.Height))
 			if err != nil {
 				return err
 			}
 			data = board
-		case RUSR:
-			if puzzle.ExtraSections.RUSR == nil {
+		case UserRebusTable:
+			if puzzle.ExtraSections.UserRebusTable == nil {
 				return ErrMissingExtraSection
 			}
 
-			for _, entry := range puzzle.ExtraSections.RUSR {
+			for _, entry := range puzzle.ExtraSections.UserRebusTable {
 				data = append(data, entry.ToBytes()...)
 			}
 		}

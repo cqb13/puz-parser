@@ -13,9 +13,10 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 
 - Tests for extra sections
 - Type abstractions for extra sections elements and game solution/state
-- Ability to build puzzles easily
 - Better errors
 - Docs
+
+puzzle builder struct with board woth cells with all markup stuff, and numbers, clues, reubs, etc... generated from puzzele and can build a puzzle
 
 ## Installation
 

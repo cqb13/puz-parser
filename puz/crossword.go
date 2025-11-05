@@ -5,33 +5,35 @@ import (
 )
 
 const file_magic string = "ACROSS&DOWN"
-const BLACK_SQUARE byte = '.'
 const min_word_len = 2
+const BLACK_SQUARE byte = '.'
+const EMPTY_STATE_SQUARE byte = '-'
+const EMPTY_SOLUTION_SQUARE byte = ' '
 
 type ExtraSection int
 
 const (
-	GRBS ExtraSection = iota // Rebus data
-	RTBL                     // Rebus solution table
-	LTIM                     // Timer
-	GEXT                     // Cell style attributes
-	RUSR                     // User rebus entries
+	RebusBoard     ExtraSection = iota // GRBS
+	RebusTable                         // RTBL
+	Timer                              // LTIM
+	MarkupBoard                        // GEXT
+	UserRebusTable                     // RUSR
 )
 
 var sectionMap = map[string]ExtraSection{
-	"GRBS": GRBS,
-	"RTBL": RTBL,
-	"LTIM": LTIM,
-	"GEXT": GEXT,
-	"RUSR": RUSR,
+	"GRBS": RebusBoard,
+	"RTBL": RebusTable,
+	"LTIM": Timer,
+	"GEXT": MarkupBoard,
+	"RUSR": UserRebusTable,
 }
 
 var sectionStrMap = map[ExtraSection]string{
-	GRBS: "GRBS",
-	RTBL: "RTBL",
-	LTIM: "LTIM",
-	GEXT: "GEXT",
-	RUSR: "RUSR",
+	RebusBoard:     "GRBS",
+	RebusTable:     "RTBL",
+	Timer:          "LTIM",
+	MarkupBoard:    "GEXT",
+	UserRebusTable: "RUSR",
 }
 
 func GetSectionFromString(s string) (ExtraSection, bool) {
@@ -51,26 +53,15 @@ const (
 	DOWN
 )
 
+type Markup byte
+
 const (
-	None                = 0x00
-	PreviouslyIncorrect = 0x10
-	CurrentlyIncorrect  = 0x20
-	ContentGiven        = 0x40
-	SquareCircled       = 0x80
+	None                Markup = 0x00
+	PreviouslyIncorrect Markup = 0x10
+	CurrentlyIncorrect  Markup = 0x20
+	ContentGiven        Markup = 0x40
+	SquareCircled       Markup = 0x80
 )
-
-type Clue struct {
-	Clue      string
-	Direction Direction
-	WordNum   int
-	WordStart struct {
-		X int
-		Y int
-	}
-}
-
-// TODO: when encoding clues they must be sorted first
-type Clues [][]Clue
 
 type Puzzle struct {
 	Title             string
@@ -82,8 +73,8 @@ type Puzzle struct {
 	Size              int
 	numClues          uint16
 	Clues             []string
-	Solution          [][]byte
-	State             [][]byte
+	Solution          Board
+	State             Board
 	extraSectionOrder []ExtraSection
 	ExtraSections     ExtraSections
 	metadata          metadata
@@ -92,6 +83,8 @@ type Puzzle struct {
 	preamble          []byte
 	postscript        []byte
 }
+
+//TODO: add clue to word, take an x and a y, and a direction if on the board that is a word, and the clue in the proper location
 
 func (p *Puzzle) Scrambled() bool {
 	if p.metadata.ScrambledTag == 0 {
@@ -103,12 +96,12 @@ func (p *Puzzle) Scrambled() bool {
 
 func (p *Puzzle) Unscramble(key int) error {
 	if !p.Scrambled() {
-		return fmt.Errorf("Puzzle is already unscrambled")
+		return ErrPuzzleIsUnscrambled
 	}
 
 	err := unscramble(p, key)
 	if err != nil {
-		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+		return fmt.Errorf("Failed to unscramble crossword: %w", err)
 	}
 
 	return nil
@@ -116,12 +109,12 @@ func (p *Puzzle) Unscramble(key int) error {
 
 func (p *Puzzle) Scramble(key int) error {
 	if p.Scrambled() {
-		return fmt.Errorf("Puzzle is already scrambled")
+		return ErrPuzzleIsScrambled
 	}
 
 	err := scramble(p, key)
 	if err != nil {
-		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+		return fmt.Errorf("Failed to unscramble crossword: %w", err)
 	}
 
 	return nil
@@ -133,7 +126,7 @@ func (p *Puzzle) GetMetadata() metadata {
 
 func (p *Puzzle) SetVersion(version string) error {
 	if len(version) != 3 {
-		return fmt.Errorf("Invalid version format, must be X.X")
+		return ErrInvalidVersionFormat
 	}
 
 	p.metadata.Version = version + "\x00"
@@ -141,18 +134,24 @@ func (p *Puzzle) SetVersion(version string) error {
 	return nil
 }
 
-// ExtraSections holds optional data sections. Any field may be nil if not set.
+// ExtraSections holds optional data sections. Any  may be nil if not set.
+// TODO: make markupboard a type with methods to get markup squares
 type ExtraSections struct {
-	GRBS [][]byte
-	RTBL []RebusEntry
-	LTIM *TimerData
-	GEXT [][]byte
-	RUSR []RebusEntry
+	RebusBoard     [][]byte
+	RebusTable     []RebusEntry
+	Timer          *TimerData
+	MarkupBoard    [][]byte
+	UserRebusTable []RebusEntry
 }
 
 type RebusEntry struct {
 	Key   int
 	Value string
+}
+
+// Returns key-1. The key 1 greater than what it is in binary so it matches the key in the Rebus board
+func (r *RebusEntry) GetRealKey() int {
+	return r.Key - 1
 }
 
 func (r *RebusEntry) ToBytes() []byte {

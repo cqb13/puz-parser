@@ -272,36 +272,36 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	puzzle.extraSectionOrder = append(puzzle.extraSectionOrder, section)
 
 	switch section {
-	case GRBS:
+	case RebusBoard:
 		board, err := parseExtraSectionBoard(data, puzzle)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.GRBS = board
-	case RTBL:
+		puzzle.ExtraSections.RebusBoard = board
+	case RebusTable:
 		tbl, err := parseExtraSectionRebusTbl(data)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.RTBL = tbl
-	case LTIM:
+		puzzle.ExtraSections.RebusTable = tbl
+	case Timer:
 		timer, err := parseExtraTimerSection(data)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.LTIM = timer
-	case GEXT:
+		puzzle.ExtraSections.Timer = timer
+	case MarkupBoard:
 		board, err := parseExtraSectionBoard(data, puzzle)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.GEXT = board
-	case RUSR:
+		puzzle.ExtraSections.MarkupBoard = board
+	case UserRebusTable:
 		tbl, err := parseExtraSectionRebusTbl(data)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.RUSR = tbl
+		puzzle.ExtraSections.UserRebusTable = tbl
 
 	default:
 		return ErrUknownExtraSectionName

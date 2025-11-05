@@ -46,14 +46,14 @@ func updatePuzzleSolution(puzzle *Puzzle, buffer []byte) {
 
 func keyToBytes(key int) ([]byte, error) {
 	if key < 1000 || key > 9999 {
-		return nil, fmt.Errorf("The key must be a 4-digit number between 1000 and 9999")
+		return nil, ErrInvalidKeyLength
 	}
 
 	keyBytes := fmt.Appendf(nil, "%04d", key)
 
 	for i := range keyBytes {
 		if keyBytes[i] == '0' {
-			return nil, fmt.Errorf("The key cannot contain any zeros")
+			return nil, ErrInvalidDigitInKey
 		}
 		keyBytes[i] -= '0'
 	}
@@ -83,7 +83,7 @@ func scramble(puzzle *Puzzle, key int) error {
 	totalLetters := len(letterBuffer)
 
 	if totalLetters < 12 {
-		return fmt.Errorf("Too few characters to scramble, minimum 12, found %d", totalLetters)
+		return ErrTooFewCharactersToScramble
 	}
 
 	puzzle.metadata.scrambledChecksum = checksumRegion(letterBuffer, 0)
@@ -162,7 +162,7 @@ func unscramble(puzzle *Puzzle, key int) error {
 	totalLetters := len(letterBuffer)
 
 	if totalLetters < 12 {
-		return fmt.Errorf("Too few characters to unscramble, minimum 12, found %d", totalLetters)
+		return ErrTooFewCharactersToUnscramble
 	}
 
 	convertLettersToNumbers(letterBuffer)
@@ -224,7 +224,7 @@ func unscramble(puzzle *Puzzle, key int) error {
 	convertNumbersToLetters(letterBuffer)
 
 	if checksumRegion(letterBuffer, 0) != puzzle.metadata.scrambledChecksum {
-		return fmt.Errorf("Incorrect key provided, checksum mismatch")
+		return ErrIncorrectKeyProvided
 	}
 
 	updatePuzzleSolution(puzzle, letterBuffer)
