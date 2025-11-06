@@ -289,7 +289,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.Timer = *timer
+		puzzle.ExtraSections.Timer = timer
 	case Markup:
 		board, err := parseExtraSectionBoard(data, puzzle)
 		if err != nil {

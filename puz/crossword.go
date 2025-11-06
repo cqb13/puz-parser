@@ -155,7 +155,7 @@ func (m MarkupBoard) GetMarkupSquare(x int, y int) (MarkupSquare, bool) {
 type ExtraSections struct {
 	RebusBoard     [][]byte
 	RebusTable     []RebusEntry
-	Timer          TimerData
+	Timer          *TimerData
 	MarkupBoard    MarkupBoard
 	UserRebusTable []RebusEntry
 }
