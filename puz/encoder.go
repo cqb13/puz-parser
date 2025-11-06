@@ -121,7 +121,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 		var data []byte
 
 		switch section {
-		case RebusBoard:
+		case Rebus:
 			if puzzle.ExtraSections.RebusBoard == nil {
 				return ErrMissingExtraSection
 			}
@@ -144,7 +144,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 				return ErrMissingExtraSection
 			}
 			data = puzzle.ExtraSections.Timer.ToBytes()
-		case MarkupBoard:
+		case Markup:
 			if puzzle.ExtraSections.MarkupBoard == nil {
 				return ErrMissingExtraSection
 			}

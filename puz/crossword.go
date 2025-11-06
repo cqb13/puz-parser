@@ -13,26 +13,26 @@ const EMPTY_SOLUTION_SQUARE byte = ' '
 type ExtraSection int
 
 const (
-	RebusBoard     ExtraSection = iota // GRBS
+	Rebus          ExtraSection = iota // GRBS
 	RebusTable                         // RTBL
 	Timer                              // LTIM
-	MarkupBoard                        // GEXT
+	Markup                             // GEXT
 	UserRebusTable                     // RUSR
 )
 
 var sectionMap = map[string]ExtraSection{
-	"GRBS": RebusBoard,
+	"GRBS": Rebus,
 	"RTBL": RebusTable,
 	"LTIM": Timer,
-	"GEXT": MarkupBoard,
+	"GEXT": Markup,
 	"RUSR": UserRebusTable,
 }
 
 var sectionStrMap = map[ExtraSection]string{
-	RebusBoard:     "GRBS",
+	Rebus:          "GRBS",
 	RebusTable:     "RTBL",
 	Timer:          "LTIM",
-	MarkupBoard:    "GEXT",
+	Markup:         "GEXT",
 	UserRebusTable: "RUSR",
 }
 
@@ -53,14 +53,14 @@ const (
 	DOWN
 )
 
-type Markup byte
+type MarkupSquare byte
 
 const (
-	None                Markup = 0x00
-	PreviouslyIncorrect Markup = 0x10
-	CurrentlyIncorrect  Markup = 0x20
-	ContentGiven        Markup = 0x40
-	SquareCircled       Markup = 0x80
+	None                MarkupSquare = 0x00
+	PreviouslyIncorrect MarkupSquare = 0x10
+	CurrentlyIncorrect  MarkupSquare = 0x20
+	ContentGiven        MarkupSquare = 0x40
+	SquareCircled       MarkupSquare = 0x80
 )
 
 type Puzzle struct {
@@ -83,8 +83,6 @@ type Puzzle struct {
 	preamble          []byte
 	postscript        []byte
 }
-
-//TODO: add clue to word, take an x and a y, and a direction if on the board that is a word, and the clue in the proper location
 
 func (p *Puzzle) Scrambled() bool {
 	if p.metadata.ScrambledTag == 0 {
@@ -134,13 +132,31 @@ func (p *Puzzle) SetVersion(version string) error {
 	return nil
 }
 
+type MarkupBoard [][]byte
+
+func (m MarkupBoard) GetMarkupSquare(x int, y int) (MarkupSquare, bool) {
+	switch m[y][x] {
+	case 0x00:
+		return None, true
+	case 0x10:
+		return PreviouslyIncorrect, true
+	case 0x20:
+		return CurrentlyIncorrect, true
+	case 0x40:
+		return ContentGiven, true
+	case 0x80:
+		return SquareCircled, true
+	}
+
+	return 0x00, false
+}
+
 // ExtraSections holds optional data sections. Any  may be nil if not set.
-// TODO: make markupboard a type with methods to get markup squares
 type ExtraSections struct {
 	RebusBoard     [][]byte
 	RebusTable     []RebusEntry
-	Timer          *TimerData
-	MarkupBoard    [][]byte
+	Timer          TimerData
+	MarkupBoard    MarkupBoard
 	UserRebusTable []RebusEntry
 }
 

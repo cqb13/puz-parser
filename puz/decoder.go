@@ -272,7 +272,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	puzzle.extraSectionOrder = append(puzzle.extraSectionOrder, section)
 
 	switch section {
-	case RebusBoard:
+	case Rebus:
 		board, err := parseExtraSectionBoard(data, puzzle)
 		if err != nil {
 			return err
@@ -289,8 +289,8 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.Timer = timer
-	case MarkupBoard:
+		puzzle.ExtraSections.Timer = *timer
+	case Markup:
 		board, err := parseExtraSectionBoard(data, puzzle)
 		if err != nil {
 			return err
