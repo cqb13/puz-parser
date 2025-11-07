@@ -52,7 +52,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	puzzle.postscript = postscript
 
 	// bytes[len(preamble):len(reader.bytes)-len(postscript)] to ensure only the actual data is checksummed
-	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
 		return nil, ErrCIBChecksumMismatch
@@ -135,9 +135,9 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.Width = width
-	puzzle.Height = height
-	puzzle.Size = int(width) * int(height)
+	puzzle.width = width
+	puzzle.height = height
+	puzzle.size = int(width) * int(height)
 
 	clueCount, err := reader.ReadShort()
 	if err != nil {
@@ -168,18 +168,18 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 }
 
 func parseSolutionAndState(reader *puzzleReader, puzzle *Puzzle) error {
-	expectedLen := reader.offset + puzzle.Size*2
+	expectedLen := reader.offset + puzzle.size*2
 
 	if expectedLen > reader.Len() {
 		return ErrUnreadableData
 	}
 
-	solution, err := parseBoard(reader, int(puzzle.Width), int(puzzle.Height))
+	solution, err := parseBoard(reader, int(puzzle.width), int(puzzle.height))
 	if err != nil {
 		return err
 	}
 
-	state, err := parseBoard(reader, int(puzzle.Width), int(puzzle.Height))
+	state, err := parseBoard(reader, int(puzzle.width), int(puzzle.height))
 	if err != nil {
 		return err
 	}
@@ -314,13 +314,13 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 }
 
 func parseExtraSectionBoard(bytes []byte, puzzle *Puzzle) ([][]byte, error) {
-	if len(bytes) != puzzle.Size {
+	if len(bytes) != puzzle.size {
 		return nil, ErrUnreadableData
 	}
 
 	var board [][]byte
-	for i := 0; i < puzzle.Size; i += int(puzzle.Width) {
-		end := i + int(puzzle.Width)
+	for i := 0; i < puzzle.size; i += int(puzzle.width) {
+		end := i + int(puzzle.width)
 		board = append(board, bytes[i:end])
 	}
 

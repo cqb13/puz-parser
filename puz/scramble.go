@@ -15,11 +15,11 @@ func isLetter(char byte) bool {
 }
 
 func createScrambleBuffer(puzzle *Puzzle) []byte {
-	var buffer = make([]byte, puzzle.Size)
+	var buffer = make([]byte, puzzle.size)
 	var n = 0
 
-	for x := range puzzle.Width {
-		for y := range puzzle.Height {
+	for x := range puzzle.width {
+		for y := range puzzle.height {
 			ch := puzzle.Solution[y][x]
 			if isLetter(ch) {
 				buffer[n] = byte(unicode.ToUpper(rune(ch)))
@@ -34,8 +34,8 @@ func createScrambleBuffer(puzzle *Puzzle) []byte {
 func updatePuzzleSolution(puzzle *Puzzle, buffer []byte) {
 	var n = 0
 
-	for x := range puzzle.Width {
-		for y := range puzzle.Height {
+	for x := range puzzle.width {
+		for y := range puzzle.height {
 			if isLetter(puzzle.Solution[y][x]) {
 				puzzle.Solution[y][x] = buffer[n]
 				n++

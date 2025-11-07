@@ -30,7 +30,7 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer.WriteBytes(puzzle.postscript)
 
 	bodyBytes := writer.Bytes()[len(puzzle.preamble) : len(writer.Bytes())-len(puzzle.postscript)]
-	computedChecksums := computeChecksums(bodyBytes, puzzle.Size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bodyBytes, puzzle.size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
 	preambleOffset := len(puzzle.preamble)
 	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
@@ -68,8 +68,8 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	writer.WriteBytes(puzzle.reserved1)
 	writer.WriteShort(puzzle.metadata.scrambledChecksum)
 	writer.WriteBytes(puzzle.reserved2)
-	writer.WriteByte(puzzle.Width)
-	writer.WriteByte(puzzle.Height)
+	writer.WriteByte(puzzle.width)
+	writer.WriteByte(puzzle.height)
 	writer.WriteShort(puzzle.numClues)
 	writer.WriteShort(puzzle.metadata.Bitmask)
 	writer.WriteShort(puzzle.metadata.ScrambledTag)
@@ -79,13 +79,13 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 
 func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) error {
 	//TODO: specify which board failed in err
-	board, err := joinBoard(puzzle.Solution, int(puzzle.Width), int(puzzle.Height))
+	board, err := joinBoard(puzzle.Solution, int(puzzle.width), int(puzzle.height))
 	if err != nil {
 		return err
 	}
 	writer.WriteBytes(board)
 
-	board, err = joinBoard(puzzle.State, int(puzzle.Width), int(puzzle.Height))
+	board, err = joinBoard(puzzle.State, int(puzzle.width), int(puzzle.height))
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 				return ErrMissingExtraSection
 			}
 
-			board, err := joinBoard(puzzle.ExtraSections.RebusBoard, int(puzzle.Width), int(puzzle.Height))
+			board, err := joinBoard(puzzle.ExtraSections.RebusBoard, int(puzzle.width), int(puzzle.height))
 			if err != nil {
 				return err
 			}
@@ -148,7 +148,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 			if puzzle.ExtraSections.MarkupBoard == nil {
 				return ErrMissingExtraSection
 			}
-			board, err := joinBoard(puzzle.ExtraSections.MarkupBoard, int(puzzle.Width), int(puzzle.Height))
+			board, err := joinBoard(puzzle.ExtraSections.MarkupBoard, int(puzzle.width), int(puzzle.height))
 			if err != nil {
 				return err
 			}

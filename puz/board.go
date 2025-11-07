@@ -11,7 +11,7 @@ func (board Board) inBounds(x int, y int) bool {
 }
 
 func (board Board) isStartOfWord(x int, y int, dir Direction) bool {
-	if !board.inBounds(x, y) || board[y][x] == BLACK_SQUARE {
+	if !board.inBounds(x, y) || board[y][x] == SOLID_SQUARE {
 		return false
 	}
 
@@ -19,12 +19,12 @@ func (board Board) isStartOfWord(x int, y int, dir Direction) bool {
 	width := len(board[y])
 
 	// for across if cell is on edge or has black square to the left and has at least 1 cell to the right without a blacks square
-	if dir == ACROSS && (x == 0 || (x-1 >= 0 && board[y][x-1] == BLACK_SQUARE)) && (x+1 < width && board[y][x+1] != BLACK_SQUARE) {
+	if dir == ACROSS && (x == 0 || (x-1 >= 0 && board[y][x-1] == SOLID_SQUARE)) && (x+1 < width && board[y][x+1] != SOLID_SQUARE) {
 		return true
 	}
 
 	// for down if a cell is on edge or has a black square above it and has at least 1 cell bellow without a black square
-	if dir == DOWN && (y == 0 || (y-1 >= 0 && board[y-1][x] == BLACK_SQUARE)) && (y+1 < height && board[y+1][x] != BLACK_SQUARE) {
+	if dir == DOWN && (y == 0 || (y-1 >= 0 && board[y-1][x] == SOLID_SQUARE)) && (y+1 < height && board[y+1][x] != SOLID_SQUARE) {
 		return true
 	}
 
@@ -48,7 +48,7 @@ func (board Board) CanPlace(wordLen int, x int, y int, dir Direction) bool {
 
 	// make sure the word wont run into any black squares
 	for range wordLen {
-		if board[yOffset][xOffset] == BLACK_SQUARE {
+		if board[yOffset][xOffset] == SOLID_SQUARE {
 			return false
 		}
 
@@ -97,7 +97,7 @@ func (board Board) GetWord(x int, y int, dir Direction) (string, bool) {
 			break
 		}
 
-		if board[y][x] == BLACK_SQUARE {
+		if board[y][x] == SOLID_SQUARE {
 			break
 		}
 

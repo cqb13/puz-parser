@@ -2,11 +2,12 @@ package puz
 
 import (
 	"fmt"
+	"slices"
 )
 
 const file_magic string = "ACROSS&DOWN"
 const min_word_len = 2
-const BLACK_SQUARE byte = '.'
+const SOLID_SQUARE byte = '.'
 const EMPTY_STATE_SQUARE byte = '-'
 const EMPTY_SOLUTION_SQUARE byte = ' '
 
@@ -68,13 +69,13 @@ type Puzzle struct {
 	Author            string
 	Copyright         string
 	Notes             string
-	Width             uint8
-	Height            uint8
-	Size              int
+	width             uint8
+	height            uint8
+	size              int
 	numClues          uint16
 	Clues             []string
 	Solution          Board
-	State             Board
+	State             Board // State from the player solving the puzzle
 	extraSectionOrder []ExtraSection
 	ExtraSections     ExtraSections
 	metadata          metadata
@@ -82,6 +83,62 @@ type Puzzle struct {
 	reserved2         []byte
 	preamble          []byte
 	postscript        []byte
+}
+
+func (p *Puzzle) GetWidth() int {
+	return int(p.width)
+}
+
+func (p *Puzzle) GetHeight() int {
+	return int(p.height)
+}
+
+func (p *Puzzle) GetSize() int {
+	return p.size
+}
+
+func (p *Puzzle) GetPreamble() []byte {
+	return p.preamble
+}
+
+func (p *Puzzle) GetPostscript() []byte {
+	return p.preamble
+}
+
+func (p *Puzzle) GetMetadata() metadata {
+	return p.metadata
+}
+
+func (p *Puzzle) SetVersion(version string) error {
+	if len(version) != 3 {
+		return ErrInvalidVersionFormat
+	}
+
+	p.metadata.Version = version + "\x00"
+
+	return nil
+}
+
+// Resets state and syncs solid squares from the solution board to the state board, fails if boards are not the same size
+func (p *Puzzle) SyncStateWithSolution() error {
+	if len(p.Solution) != len(p.State) {
+		return ErrBoardHeightMismatch
+	}
+
+	for y, row := range p.Solution {
+		if len(row) != len(p.State[y]) {
+			return ErrBoardWidthMismatch
+		}
+		for x, cell := range row {
+			if cell == SOLID_SQUARE {
+				p.State[y][x] = SOLID_SQUARE
+			} else {
+				p.State[y][x] = EMPTY_STATE_SQUARE
+			}
+		}
+	}
+
+	return nil
 }
 
 func (p *Puzzle) Scrambled() bool {
@@ -118,18 +175,61 @@ func (p *Puzzle) Scramble(key int) error {
 	return nil
 }
 
-func (p *Puzzle) GetMetadata() metadata {
-	return p.metadata
-}
-
-func (p *Puzzle) SetVersion(version string) error {
-	if len(version) != 3 {
-		return ErrInvalidVersionFormat
+// returns ok if the puzzle does not already have a rebus board
+func (p *Puzzle) AddRebusBoard() bool {
+	if p.ExtraSections.RebusBoard != nil || slices.Contains(p.extraSectionOrder, Rebus) {
+		return false
 	}
 
-	p.metadata.Version = version + "\x00"
+	board := make([][]byte, p.height)
 
-	return nil
+	for y := range p.height {
+		board[y] = make([]byte, p.width)
+	}
+
+	// Follows the expected order
+	p.extraSectionOrder = slices.Insert(p.extraSectionOrder, 0, Rebus)
+	p.ExtraSections.RebusBoard = board
+
+	return true
+}
+
+type RebusBoard [][]byte
+
+func (r RebusBoard) GetKeys() []int {
+	var keys []int
+
+	for _, row := range r {
+		for _, key := range row {
+			if key == 0x00 {
+				continue
+			}
+
+			if !slices.Contains(keys, int(key)) {
+				keys = append(keys, int(key))
+			}
+		}
+	}
+
+	return keys
+}
+
+func (r RebusBoard) GetNextKey() int {
+	max := 0
+
+	for _, row := range r {
+		for _, key := range row {
+			if key == 0x00 {
+				continue
+			}
+
+			if int(key) > max {
+				max = int(key)
+			}
+		}
+	}
+
+	return max + 1
 }
 
 type MarkupBoard [][]byte
@@ -153,7 +253,7 @@ func (m MarkupBoard) GetMarkupSquare(x int, y int) (MarkupSquare, bool) {
 
 // ExtraSections holds optional data sections. Any  may be nil if not set.
 type ExtraSections struct {
-	RebusBoard     [][]byte
+	RebusBoard     RebusBoard
 	RebusTable     []RebusEntry
 	Timer          *TimerData
 	MarkupBoard    MarkupBoard
