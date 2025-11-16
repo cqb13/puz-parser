@@ -1,8 +1,20 @@
 package puz
 
+import "slices"
+
 type Board [][]byte
 
-func (board Board) inBounds(x int, y int) bool {
+func NewBoard(width int, height int) Board {
+	board := make([][]byte, height)
+
+	for y := range height {
+		board[y] = make([]byte, width)
+	}
+
+	return board
+}
+
+func inBounds(x int, y int, board [][]byte) bool {
 	if x < 0 || y < 0 || y >= len(board) || x >= len(board[y]) {
 		return false
 	}
@@ -11,7 +23,7 @@ func (board Board) inBounds(x int, y int) bool {
 }
 
 func (board Board) isStartOfWord(x int, y int, dir Direction) bool {
-	if !board.inBounds(x, y) || board[y][x] == SOLID_SQUARE {
+	if !inBounds(x, y, board) || board[y][x] == SOLID_SQUARE {
 		return false
 	}
 
@@ -33,13 +45,13 @@ func (board Board) isStartOfWord(x int, y int, dir Direction) bool {
 
 // Returns ok if a word of the given length can be placed at a position, not ok if the length of the wword is greater than the width/height of the board, or the word will cross a black square while placing
 func (board Board) CanPlace(wordLen int, x int, y int, dir Direction) bool {
-	if !board.inBounds(x, y) {
+	if !inBounds(x, y, board) {
 		return false
 	}
 
 	// make sure the word fits in bounds
 	// -1 as letter will also be placed at origin
-	if (dir == ACROSS && !board.inBounds(x+wordLen-1, y)) || (dir == DOWN && !board.inBounds(x, y+wordLen-1)) {
+	if (dir == ACROSS && !inBounds(x+wordLen-1, y, board)) || (dir == DOWN && !inBounds(x, y+wordLen-1, board)) {
 		return false
 	}
 
@@ -132,4 +144,73 @@ func (board Board) GetWords(dir Direction) []string {
 	}
 
 	return words
+}
+
+type RebusBoard [][]byte
+
+func (r RebusBoard) GetKeys() []int {
+	var keys []int
+
+	for _, row := range r {
+		for _, key := range row {
+			if key == 0x00 {
+				continue
+			}
+
+			if !slices.Contains(keys, int(key)) {
+				keys = append(keys, int(key))
+			}
+		}
+	}
+
+	return keys
+}
+
+func (r RebusBoard) GetNextKey() int {
+	max := 0
+
+	for _, row := range r {
+		for _, key := range row {
+			if key == 0x00 {
+				continue
+			}
+
+			if int(key) > max {
+				max = int(key)
+			}
+		}
+	}
+
+	return max + 1
+}
+
+type MarkupBoard [][]byte
+
+func (m MarkupBoard) MarkupSquare(x int, y int, square MarkupSquare) {
+	if !inBounds(x, y, m) {
+		return
+	}
+
+	m[y][x] = byte(square)
+}
+
+func (m MarkupBoard) GetMarkupSquare(x int, y int) (MarkupSquare, bool) {
+	if !inBounds(x, y, m) {
+		return 0x00, true
+	}
+
+	switch m[y][x] {
+	case 0x00:
+		return None, true
+	case 0x10:
+		return PreviouslyIncorrect, true
+	case 0x20:
+		return CurrentlyIncorrect, true
+	case 0x40:
+		return ContentGiven, true
+	case 0x80:
+		return SquareCircled, true
+	}
+
+	return 0x00, false
 }

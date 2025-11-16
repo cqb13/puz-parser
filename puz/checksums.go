@@ -7,7 +7,7 @@ type checksums struct {
 	maskedHighChecksum [4]byte
 }
 
-func computeChecksums(bytes []byte, size int, title string, author string, copyright string, clues []string, notes string) *checksums {
+func computeChecksums(bytes []byte, size int, title string, author string, copyright string, clues []Clue, notes string) *checksums {
 	//cib checksum
 	computedCibChecksum := checksumRegion(bytes[44:52], 0)
 
@@ -49,7 +49,8 @@ func computeChecksums(bytes []byte, size int, title string, author string, copyr
 	}
 }
 
-func checksumStrings(title string, author string, copyright string, clues []string, notes string, checksum uint16) uint16 {
+// TODO: version check for notes checksum, only on 1.3 +
+func checksumStrings(title string, author string, copyright string, clues []Clue, notes string, checksum uint16) uint16 {
 	if len(title) > 0 {
 		checksum = checksumRegion(append([]byte(title), 0x00), checksum)
 	}
@@ -63,7 +64,7 @@ func checksumStrings(title string, author string, copyright string, clues []stri
 	}
 
 	for _, clue := range clues {
-		checksum = checksumRegion([]byte(clue), checksum)
+		checksum = checksumRegion([]byte(clue.Clue), checksum)
 	}
 
 	if len(notes) > 0 {

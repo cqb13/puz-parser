@@ -19,7 +19,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 		return nil, ErrMissingFileMagic
 	}
 	preamble, err := reader.Read(fileMagicIndex - 2)
-	puzzle.preamble = preamble
+	puzzle.unusedData.preamble = preamble
 
 	foundChecksums, err := parseHeader(&reader, &puzzle)
 	if err != nil {
@@ -49,10 +49,10 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	}
 
 	postscript := reader.ReadRemaining()
-	puzzle.postscript = postscript
+	puzzle.unusedData.postscript = postscript
 
 	// bytes[len(preamble):len(reader.bytes)-len(postscript)] to ensure only the actual data is checksummed
-	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
 		return nil, ErrCIBChecksumMismatch
@@ -105,27 +105,27 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.metadata.Version = string(version)
+	puzzle.version = string(version)
 
 	// not used in most files
 	reserved1, err := reader.Read(2)
 	if err != nil {
 		return nil, err
 	}
-	puzzle.reserved1 = reserved1
+	puzzle.unusedData.reserved1 = reserved1
 
 	scrambledChecksum, err := reader.ReadShort()
 	if err != nil {
 		return nil, err
 	}
-	puzzle.metadata.scrambledChecksum = scrambledChecksum
+	puzzle.scramble.scrambledChecksum = scrambledChecksum
 
 	// not used in most files
 	reserved2, err := reader.Read(12)
 	if err != nil {
 		return nil, err
 	}
-	puzzle.reserved2 = reserved2
+	puzzle.unusedData.reserved2 = reserved2
 
 	width, err := reader.ReadByte()
 	if err != nil {
@@ -135,27 +135,27 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.width = width
-	puzzle.height = height
-	puzzle.size = int(width) * int(height)
+
+	puzzle.Board = NewBoard(width, height)
 
 	clueCount, err := reader.ReadShort()
 	if err != nil {
 		return nil, err
 	}
-	puzzle.numClues = clueCount
+	puzzle.expectedClues = clueCount
 
+	//TODO: rename to puzzle type Normal or Diagramless and add check for it
 	bitmask, err := reader.ReadShort()
 	if err != nil {
 		return nil, err
 	}
-	puzzle.metadata.Bitmask = bitmask
+	puzzle.bitmask = bitmask
 
 	scrambledTag, err := reader.ReadShort()
 	if err != nil {
 		return nil, err
 	}
-	puzzle.metadata.ScrambledTag = scrambledTag
+	puzzle.scramble.scrambledTag = scrambledTag
 
 	foundChecksums := checksums{
 		checksum,
@@ -168,24 +168,32 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 }
 
 func parseSolutionAndState(reader *puzzleReader, puzzle *Puzzle) error {
-	expectedLen := reader.offset + puzzle.size*2
+	width := puzzle.Board.Width()
+	height := puzzle.Board.Height()
+	size := width * height
+
+	expectedLen := reader.offset + size*2
 
 	if expectedLen > reader.Len() {
 		return ErrUnreadableData
 	}
 
-	solution, err := parseBoard(reader, int(puzzle.width), int(puzzle.height))
+	solution, err := parseBoard(reader, width, height)
 	if err != nil {
 		return err
 	}
 
-	state, err := parseBoard(reader, int(puzzle.width), int(puzzle.height))
+	state, err := parseBoard(reader, width, height)
 	if err != nil {
 		return err
 	}
 
-	puzzle.Solution = solution
-	puzzle.State = state
+	for y := range height {
+		for x := range width {
+			puzzle.Board[y][x].Value = solution[y][x]
+			puzzle.Board[y][x].State = state[y][x]
+		}
+	}
 
 	return nil
 }
@@ -215,16 +223,53 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 
 	var clues []string
 
-	for range puzzle.numClues {
+	for range puzzle.expectedClues {
 		clue := reader.ReadStr()
 		clues = append(clues, clue)
 	}
 
-	if len(clues) != int(puzzle.numClues) {
+	if len(clues) != int(puzzle.expectedClues) {
 		return ErrClueCountMismatch
 	}
 
-	puzzle.Clues = clues
+	puzzle.Clues = make([]Clue, puzzle.expectedClues)
+
+	height := puzzle.Board.Height()
+	width := puzzle.Board.Width()
+	nextClueNum := 1
+	nextClueIndex := 0
+	assigned := false
+	needsAcrossNum := false
+	needsDownNum := false
+
+	for y := range height {
+		for x := range width {
+			if puzzle.Board.IsBlackSquare(x, y) {
+				continue
+			}
+
+			assigned = false
+
+			needsAcrossNum = puzzle.Board.CellNeedsAcrossNumber(x, y)
+			needsDownNum = puzzle.Board.CellNeedsDownNumber(x, y)
+
+			if needsAcrossNum {
+				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, ACROSS)
+				assigned = true
+				nextClueIndex += 1
+			}
+
+			if needsDownNum {
+				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, DOWN)
+				assigned = true
+				nextClueIndex += 1
+			}
+
+			if assigned {
+				nextClueNum += 1
+			}
+		}
+	}
 
 	notes := reader.ReadStr()
 	puzzle.Notes = notes
@@ -265,43 +310,57 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		return ErrExtraSectionChecksumMismatch
 	}
 
-	if slices.Contains(puzzle.extraSectionOrder, section) {
+	if slices.Contains(puzzle.Extras.extraSectionOrder, section) {
 		return ErrDuplicateExtraSection
 	}
 
-	puzzle.extraSectionOrder = append(puzzle.extraSectionOrder, section)
+	puzzle.Extras.extraSectionOrder = append(puzzle.Extras.extraSectionOrder, section)
 
 	switch section {
-	case Rebus:
-		board, err := parseExtraSectionBoard(data, puzzle)
+	case rebus:
+		height := puzzle.Board.Height()
+		width := puzzle.Board.Width()
+		board, err := parseExtraSectionBoard(data, width, height, puzzle)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.RebusBoard = board
-	case RebusTable:
+
+		for y := range height {
+			for x := range width {
+				puzzle.Board[y][x].RebusKey = board[y][x]
+			}
+		}
+	case rebusTable:
 		tbl, err := parseExtraSectionRebusTbl(data)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.RebusTable = tbl
-	case Timer:
+		puzzle.Extras.RebusTable = tbl
+	case timer:
 		timer, err := parseExtraTimerSection(data)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.Timer = timer
-	case Markup:
-		board, err := parseExtraSectionBoard(data, puzzle)
+		puzzle.Extras.Timer = timer
+	case markup:
+		height := puzzle.Board.Height()
+		width := puzzle.Board.Width()
+		board, err := parseExtraSectionBoard(data, width, height, puzzle)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.MarkupBoard = board
-	case UserRebusTable:
+
+		for y := range height {
+			for x := range width {
+				puzzle.Board[y][x].Markup = board[y][x]
+			}
+		}
+	case userRebusTable:
 		tbl, err := parseExtraSectionRebusTbl(data)
 		if err != nil {
 			return err
 		}
-		puzzle.ExtraSections.UserRebusTable = tbl
+		puzzle.Extras.UserRebusTable = tbl
 
 	default:
 		return ErrUknownExtraSectionName
@@ -313,14 +372,15 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	return nil
 }
 
-func parseExtraSectionBoard(bytes []byte, puzzle *Puzzle) ([][]byte, error) {
-	if len(bytes) != puzzle.size {
+func parseExtraSectionBoard(bytes []byte, width int, height int, puzzle *Puzzle) ([][]byte, error) {
+	size := width * height
+	if len(bytes) != size {
 		return nil, ErrUnreadableData
 	}
 
 	var board [][]byte
-	for i := 0; i < puzzle.size; i += int(puzzle.width) {
-		end := i + int(puzzle.width)
+	for i := 0; i < size; i += width {
+		end := i + width
 		board = append(board, bytes[i:end])
 	}
 

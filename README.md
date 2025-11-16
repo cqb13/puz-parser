@@ -52,6 +52,7 @@ func main() {
 This project would not be possible without the help of the following:
 
 - [PUZ File Format Wiki](https://code.google.com/archive/p/puz/wikis/FileFormat.wiki)
+- [PUZ File Format ](https://web.archive.org/web/20151028113448/https://code.google.com/p/puz/wiki/FileFormat)
 - [Cryptic Crossword](https://www.muppetlabs.com/~breadbox/txt/acre.html)
 - [Scrambling Algorithm](https://www.muppetlabs.com/~breadbox/txt/scramble-c.txt)
 - [PuzPy](https://github.com/alexdej/puzpy)
