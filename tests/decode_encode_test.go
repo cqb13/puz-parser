@@ -41,6 +41,6 @@ func correctDecodeAndEncode(name string, t *testing.T) {
 	}
 
 	if !bytes.Equal(data, encoded) {
-		t.Errorf("Encoded bytes do not match original for %s", name)
+		t.Errorf("Encoded bytes do not match original for %s\n\noriginal:\n%s\n\nnew:\n%s", name, buildHex(data), buildHex(encoded))
 	}
 }

@@ -15,12 +15,15 @@ func isLetter(char byte) bool {
 }
 
 func createScrambleBuffer(puzzle *Puzzle) []byte {
-	var buffer = make([]byte, puzzle.size)
+	height := puzzle.Board.Height()
+	width := puzzle.Board.Width()
+
+	var buffer = make([]byte, width*height)
 	var n = 0
 
-	for x := range puzzle.width {
-		for y := range puzzle.height {
-			ch := puzzle.Solution[y][x]
+	for x := range width {
+		for y := range height {
+			ch := puzzle.Board[y][x].Value
 			if isLetter(ch) {
 				buffer[n] = byte(unicode.ToUpper(rune(ch)))
 				n++
@@ -32,12 +35,14 @@ func createScrambleBuffer(puzzle *Puzzle) []byte {
 }
 
 func updatePuzzleSolution(puzzle *Puzzle, buffer []byte) {
+	height := puzzle.Board.Height()
+	width := puzzle.Board.Width()
 	var n = 0
 
-	for x := range puzzle.width {
-		for y := range puzzle.height {
-			if isLetter(puzzle.Solution[y][x]) {
-				puzzle.Solution[y][x] = buffer[n]
+	for x := range width {
+		for y := range height {
+			if isLetter(puzzle.Board[y][x].Value) {
+				puzzle.Board[y][x].Value = buffer[n]
 				n++
 			}
 		}
@@ -86,8 +91,8 @@ func scramble(puzzle *Puzzle, key int) error {
 		return ErrTooFewCharactersToScramble
 	}
 
-	puzzle.metadata.scrambledChecksum = checksumRegion(letterBuffer, 0)
-	puzzle.metadata.ScrambledTag = 4
+	puzzle.scramble.scrambledChecksum = checksumRegion(letterBuffer, 0)
+	puzzle.scramble.scrambledTag = 4
 
 	convertLettersToNumbers(letterBuffer)
 
@@ -223,13 +228,13 @@ func unscramble(puzzle *Puzzle, key int) error {
 
 	convertNumbersToLetters(letterBuffer)
 
-	if checksumRegion(letterBuffer, 0) != puzzle.metadata.scrambledChecksum {
+	if checksumRegion(letterBuffer, 0) != puzzle.scramble.scrambledChecksum {
 		return ErrIncorrectKeyProvided
 	}
 
 	updatePuzzleSolution(puzzle, letterBuffer)
-	puzzle.metadata.ScrambledTag = 0
-	puzzle.metadata.scrambledChecksum = 0x0000
+	puzzle.scramble.scrambledTag = 0
+	puzzle.scramble.scrambledChecksum = 0x0000
 
 	return nil
 }

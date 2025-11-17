@@ -144,12 +144,15 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	}
 	puzzle.expectedClues = clueCount
 
-	//TODO: rename to puzzle type Normal or Diagramless and add check for it
 	bitmask, err := reader.ReadShort()
 	if err != nil {
 		return nil, err
 	}
-	puzzle.bitmask = bitmask
+	if bitmask == uint16(Diagramless) {
+		puzzle.puzzleType = Diagramless
+	} else {
+		puzzle.puzzleType = Normal
+	}
 
 	scrambledTag, err := reader.ReadShort()
 	if err != nil {
@@ -250,17 +253,17 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 
 			assigned = false
 
-			needsAcrossNum = puzzle.Board.CellNeedsAcrossNumber(x, y)
-			needsDownNum = puzzle.Board.CellNeedsDownNumber(x, y)
+			needsAcrossNum = puzzle.Board.StartsAcrossWord(x, y)
+			needsDownNum = puzzle.Board.StartsDownWord(x, y)
 
 			if needsAcrossNum {
-				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, ACROSS)
+				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, Across)
 				assigned = true
 				nextClueIndex += 1
 			}
 
 			if needsDownNum {
-				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, DOWN)
+				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, Down)
 				assigned = true
 				nextClueIndex += 1
 			}

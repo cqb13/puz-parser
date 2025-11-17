@@ -1,22 +1,26 @@
 package puz
 
-import (
-	"fmt"
-)
+import "fmt"
 
 const file_magic string = "ACROSS&DOWN"
 const default_version string = "1.4\x00"
-const min_word_len = 2
 const SOLID_SQUARE byte = '.'
 const DIAGRAMLESS_SOLID_SQUARE byte = ':'
 const EMPTY_STATE_SQUARE byte = '-'
 const EMPTY_SOLUTION_SQUARE byte = ' '
 
+type PuzzleType uint16
+
+const (
+	Normal      PuzzleType = 0x0001
+	Diagramless PuzzleType = 0x0401
+)
+
 type Direction int
 
 const (
-	ACROSS = iota
-	DOWN
+	Across = iota
+	Down
 )
 
 type extraSection int
@@ -74,15 +78,43 @@ type Puzzle struct {
 	Board         Board
 	expectedClues uint16
 	Clues         Clues
-	Extras        *extraSections
-	bitmask       uint16
-	scramble      *scrambleData
-	unusedData    *unused
+	Extras        extraSections
+	puzzleType    PuzzleType
+	bitmask       uint16 //TODO: this might not be needed, test to see if majority of crosswords comply
+	scramble      scrambleData
+	unusedData    unused
 }
 
-/*
-TODO: method to get the positions of the start of every word and the directions a word can go at a pos
-*/
+func (p *Puzzle) Scrambled() bool {
+	return p.scramble.scrambledTag != 0
+}
+
+func (p *Puzzle) Unscramble(key int) error {
+	if !p.Scrambled() {
+		return fmt.Errorf("Puzzle is already unscrambled")
+	}
+
+	err := unscramble(p, key)
+	if err != nil {
+		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+	}
+
+	return nil
+}
+
+func (p *Puzzle) Scramble(key int) error {
+	if p.Scrambled() {
+		return fmt.Errorf("Puzzle is already scrambled")
+	}
+
+	err := scramble(p, key)
+	if err != nil {
+		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+	}
+
+	return nil
+}
+
 type Board [][]Cell
 
 func NewBoard(width uint8, height uint8) [][]Cell {
@@ -121,14 +153,41 @@ func (b Board) inBounds(x int, y int) bool {
 }
 
 func (b Board) IsBlackSquare(x int, y int) bool {
-	if !b.inBounds(x, y) {
-		return false
-	}
-
 	return b[y][x].Value == SOLID_SQUARE || b[y][x].Value == DIAGRAMLESS_SOLID_SQUARE
 }
 
-func (b Board) CellNeedsAcrossNumber(x int, y int) bool {
+func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
+	if !b.inBounds(x, y) {
+		return "", false
+	}
+
+	if b.IsBlackSquare(x, y) {
+		return "", false
+	}
+
+	word := ""
+
+	xOffset := x
+	yOffset := y
+
+	for {
+		word += string(b[y][x].Value)
+
+		if dir == Across {
+			xOffset += 1
+		} else {
+			yOffset += 1
+		}
+
+		if !b.inBounds(xOffset, yOffset) || b.IsBlackSquare(xOffset, yOffset) {
+			break
+		}
+	}
+
+	return word, true
+}
+
+func (b Board) StartsAcrossWord(x int, y int) bool {
 	if !b.inBounds(x, y) {
 		return false
 	}
@@ -142,16 +201,7 @@ func (b Board) CellNeedsAcrossNumber(x int, y int) bool {
 	return false
 }
 
-// TODO: add a method to get the markups square type
-// TODO: rename Value to solution or answer maybe
-type Cell struct {
-	Value    byte
-	State    byte
-	RebusKey byte
-	Markup   byte
-}
-
-func (b Board) CellNeedsDownNumber(x int, y int) bool {
+func (b Board) StartsDownWord(x int, y int) bool {
 	if !b.inBounds(x, y) {
 		return false
 	}
@@ -163,6 +213,64 @@ func (b Board) CellNeedsDownNumber(x int, y int) bool {
 	}
 
 	return false
+}
+
+func (b Board) GetWords() []Word {
+	var words []Word
+
+	width := b.Width()
+	for y := range b.Height() {
+		for x := range width {
+			if b.IsBlackSquare(x, y) {
+				continue
+			}
+
+			startsAcrossWord := b.StartsAcrossWord(x, y)
+			startsDownWord := b.StartsAcrossWord(x, y)
+
+			if startsAcrossWord {
+				word, ok := b.GetWord(x, y, Across)
+				if ok {
+					words = append(words, Word{
+						word,
+						x,
+						y,
+						Across,
+					})
+				}
+			}
+
+			if startsDownWord {
+				word, ok := b.GetWord(x, y, Down)
+				if ok {
+					words = append(words, Word{
+						word,
+						x,
+						y,
+						Down,
+					})
+				}
+			}
+		}
+	}
+
+	return words
+}
+
+type Word struct {
+	Word      string
+	StartX    int
+	StartY    int
+	Direction Direction
+}
+
+// TODO: add a method to get the markups square type
+// TODO: rename Value to solution or answer maybe
+type Cell struct {
+	Value    byte
+	State    byte
+	RebusKey byte
+	Markup   byte
 }
 
 // TODO: add a sort method to clues to sort based on pos if same pos then dir
@@ -198,30 +306,9 @@ type RebusEntry struct {
 	Value string
 }
 
-// TODO: remove this and just make a func in encoder
-func (r *RebusEntry) ToBytes() []byte {
-	// Keys are stored as + 1 in entries to match with the board, must convert back
-	padding := ""
-	if r.Key-1 < 10 {
-		padding = " "
-	}
-	return fmt.Appendf(nil, "%s%d:%s;", padding, r.Key-1, r.Value)
-}
-
 type TimerData struct {
 	SecondsPassed int
 	Running       bool
-}
-
-// TODO: remove this and just make a func in encoder
-func (t *TimerData) ToBytes() []byte {
-	runningRep := 0
-
-	if !t.Running {
-		runningRep = 1
-	}
-
-	return fmt.Appendf(nil, "%d,%d", t.SecondsPassed, runningRep)
 }
 
 type scrambleData struct {

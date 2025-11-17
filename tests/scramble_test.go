@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/cqb13/puz-parser/puz"
@@ -64,9 +63,11 @@ func TestUnscramble(t *testing.T) {
 				t.Fatalf("Failed to decode %s: %v", tc.plainFile, err)
 			}
 
-			for y := range puzzle.Solution {
-				if !bytes.Equal(puzzle.Solution[y], checkPuzzle.Solution[y]) {
-					t.Errorf("Row %d mismatch after unscramble", y)
+			for y := range puzzle.Board {
+				for x := range puzzle.Board[y] {
+					if puzzle.Board[y][x].Value != checkPuzzle.Board[y][x].Value {
+						t.Errorf("Cell x: %d y: %d mismatch after unscramble", x, y)
+					}
 				}
 			}
 		})
@@ -106,9 +107,11 @@ func TestScramble(t *testing.T) {
 				t.Fatalf("Failed to decode %s: %v", tc.scrambledFile, err)
 			}
 
-			for y := range puzzle.Solution {
-				if !bytes.Equal(puzzle.Solution[y], checkPuzzle.Solution[y]) {
-					t.Errorf("Row %d mismatch after scramble", y)
+			for y := range puzzle.Board {
+				for x := range puzzle.Board[y] {
+					if puzzle.Board[y][x].Value != checkPuzzle.Board[y][x].Value {
+						t.Errorf("Cell x: %d y: %d mismatch after scramble", x, y)
+					}
 				}
 			}
 		})

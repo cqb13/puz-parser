@@ -5,17 +5,14 @@ import "fmt"
 func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer := newPuzzleWriter()
 
-	writer.WriteBytes(puzzle.preamble)
+	writer.WriteBytes(puzzle.unusedData.preamble)
 
 	err := encodeHeader(puzzle, writer)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to encode header: %w", err)
 	}
 
-	err = encodeSolutionAndState(puzzle, writer)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to encode solution and state: %w", err)
-	}
+	encodeSolutionAndState(puzzle, writer)
 
 	err = encodeStringsSection(puzzle, writer)
 	if err != nil {
@@ -27,12 +24,12 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to encode extra sections: %w", err)
 	}
 
-	writer.WriteBytes(puzzle.postscript)
+	writer.WriteBytes(puzzle.unusedData.postscript)
 
-	bodyBytes := writer.Bytes()[len(puzzle.preamble) : len(writer.Bytes())-len(puzzle.postscript)]
-	computedChecksums := computeChecksums(bodyBytes, puzzle.size, puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	bodyBytes := writer.Bytes()[len(puzzle.unusedData.preamble) : len(writer.Bytes())-len(puzzle.unusedData.postscript)]
+	computedChecksums := computeChecksums(bodyBytes, puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
 
-	preambleOffset := len(puzzle.preamble)
+	preambleOffset := len(puzzle.unusedData.preamble)
 	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
 	if err != nil {
 		return nil, err
@@ -64,38 +61,40 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 
 	// placeholder for cib, maskedLow, and maskedHigh checksums, computed and inserted later
 	writer.WritePlaceholder(10)
-	writer.WriteBytes([]byte(puzzle.metadata.Version)) // not using write str because it already has the null terminator
-	writer.WriteBytes(puzzle.reserved1)
-	writer.WriteShort(puzzle.metadata.scrambledChecksum)
-	writer.WriteBytes(puzzle.reserved2)
-	writer.WriteByte(puzzle.width)
-	writer.WriteByte(puzzle.height)
-	writer.WriteShort(puzzle.numClues)
-	writer.WriteShort(puzzle.metadata.Bitmask)
-	writer.WriteShort(puzzle.metadata.ScrambledTag)
+	writer.WriteBytes([]byte(puzzle.version)) // not using write str because it already has the null terminator
+	writer.WriteBytes(puzzle.unusedData.reserved1)
+	writer.WriteShort(puzzle.scramble.scrambledChecksum)
+	writer.WriteBytes(puzzle.unusedData.reserved2)
+	writer.WriteByte(byte(puzzle.Board.Width()))
+	writer.WriteByte(byte(puzzle.Board.Height()))
+	writer.WriteShort(uint16(len(puzzle.Clues)))
+	writer.WriteShort(uint16(puzzle.puzzleType))
+	writer.WriteShort(puzzle.scramble.scrambledTag)
 
 	return nil
 }
 
-func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) error {
-	//TODO: specify which board failed in err
-	board, err := joinBoard(puzzle.Solution, int(puzzle.width), int(puzzle.height))
-	if err != nil {
-		return err
-	}
-	writer.WriteBytes(board)
+func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
+	height := puzzle.Board.Height()
+	width := puzzle.Board.Width()
+	size := height * width
 
-	board, err = joinBoard(puzzle.State, int(puzzle.width), int(puzzle.height))
-	if err != nil {
-		return err
-	}
-	writer.WriteBytes(board)
+	solution := make([]byte, size)
+	state := make([]byte, size)
 
-	return nil
+	for y := range height {
+		for x := range width {
+			solution[(y*width)+x] = puzzle.Board[y][x].Value
+			state[(y*width)+x] = puzzle.Board[y][x].State
+		}
+	}
+
+	writer.WriteBytes(solution)
+	writer.WriteBytes(state)
 }
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
-	if len(puzzle.Clues) != int(puzzle.numClues) {
+	if len(puzzle.Clues) != int(puzzle.expectedClues) {
 		return ErrClueCountMismatch
 	}
 
@@ -103,7 +102,7 @@ func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 	writer.WriteString(puzzle.Author)
 	writer.WriteString(puzzle.Copyright)
 	for _, clue := range puzzle.Clues {
-		writer.WriteString(clue)
+		writer.WriteString(clue.Clue)
 	}
 	writer.WriteString(puzzle.Notes)
 
@@ -112,7 +111,7 @@ func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 
 // TODO: specify which section is missing
 func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
-	for _, section := range puzzle.extraSectionOrder {
+	for _, section := range puzzle.Extras.extraSectionOrder {
 		name, ok := GetStrFromSection(section)
 		if !ok {
 			return ErrUknownExtraSectionName
@@ -121,45 +120,64 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 		var data []byte
 
 		switch section {
-		case rebus:
-			if puzzle.ExtraSections.RebusBoard == nil {
-				return ErrMissingExtraSection
+		case rebus, markup:
+
+			height := puzzle.Board.Height()
+			width := puzzle.Board.Width()
+			size := height * width
+
+			board := make([]byte, size)
+
+			for y := range height {
+				for x := range width {
+					var val byte
+
+					if section == rebus {
+						val = puzzle.Board[y][x].RebusKey
+					} else {
+						val = puzzle.Board[y][x].Markup
+					}
+
+					board[(y*width)+x] = val
+				}
 			}
 
-			board, err := joinBoard(puzzle.ExtraSections.RebusBoard, int(puzzle.width), int(puzzle.height))
-			if err != nil {
-				return err
-			}
 			data = board
 		case rebusTable:
-			if puzzle.ExtraSections.RebusTable == nil {
+			if puzzle.Extras.RebusTable == nil {
 				return ErrMissingExtraSection
 			}
 
-			for _, entry := range puzzle.ExtraSections.RebusTable {
-				data = append(data, entry.ToBytes()...)
+			for _, entry := range puzzle.Extras.RebusTable {
+				padding := ""
+				if entry.Key-1 < 10 {
+					padding = " "
+				}
+				data = fmt.Appendf(data, "%s%d:%s;", padding, entry.Key-1, entry.Value)
 			}
 		case timer:
-			if puzzle.ExtraSections.Timer == nil {
-				return ErrMissingExtraSection
-			}
-			data = puzzle.ExtraSections.Timer.ToBytes()
-		case markup:
-			if puzzle.ExtraSections.MarkupBoard == nil {
-				return ErrMissingExtraSection
-			}
-			board, err := joinBoard(puzzle.ExtraSections.MarkupBoard, int(puzzle.width), int(puzzle.height))
-			if err != nil {
-				return err
-			}
-			data = board
-		case userRebusTable:
-			if puzzle.ExtraSections.UserRebusTable == nil {
+			if puzzle.Extras.Timer == nil {
 				return ErrMissingExtraSection
 			}
 
-			for _, entry := range puzzle.ExtraSections.UserRebusTable {
-				data = append(data, entry.ToBytes()...)
+			runningRep := 0
+
+			if !puzzle.Extras.Timer.Running {
+				runningRep = 1
+			}
+
+			data = fmt.Appendf(data, "%d,%d", puzzle.Extras.Timer.SecondsPassed, runningRep)
+		case userRebusTable:
+			if puzzle.Extras.UserRebusTable == nil {
+				return ErrMissingExtraSection
+			}
+
+			for _, entry := range puzzle.Extras.UserRebusTable {
+				padding := ""
+				if entry.Key-1 < 10 {
+					padding = " "
+				}
+				data = fmt.Appendf(data, "%s%d:%s;", padding, entry.Key-1, entry.Value)
 			}
 		}
 
@@ -175,21 +193,4 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 	}
 
 	return nil
-}
-
-func joinBoard(board [][]byte, width int, height int) ([]byte, error) {
-	if len(board) != height {
-		return nil, ErrBoardHeightMismatch
-	}
-	var data []byte
-
-	for _, row := range board {
-		if len(row) != width {
-			return nil, ErrBoardWidthMismatch
-		}
-
-		data = append(data, row...)
-	}
-
-	return data, nil
 }
