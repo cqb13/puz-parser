@@ -237,6 +237,13 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 
 	puzzle.Clues = make([]Clue, puzzle.expectedClues)
 
+	notes := reader.ReadStr()
+	puzzle.Notes = notes
+
+	if puzzle.expectedClues == 0 {
+		return nil
+	}
+
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()
 	nextClueNum := 1
@@ -273,9 +280,6 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 			}
 		}
 	}
-
-	notes := reader.ReadStr()
-	puzzle.Notes = notes
 
 	return nil
 }

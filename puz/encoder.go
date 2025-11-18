@@ -94,6 +94,7 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
 }
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
+	//TODO: make this work with adding clues
 	if len(puzzle.Clues) != int(puzzle.expectedClues) {
 		return ErrClueCountMismatch
 	}

@@ -80,9 +80,43 @@ type Puzzle struct {
 	Clues         Clues
 	Extras        extraSections
 	puzzleType    PuzzleType
-	bitmask       uint16 //TODO: this might not be needed, test to see if majority of crosswords comply
 	scramble      scrambleData
 	unusedData    unused
+}
+
+// TODO: make this use builder
+func NewPuzzle(width uint8, height uint8) *Puzzle {
+	return &Puzzle{
+		"",
+		"",
+		"",
+		"",
+		default_version,
+		NewBoard(width, height),
+		0,
+		make([]Clue, 0),
+		extraSections{
+			make([]extraSection, 0),
+			make([]RebusEntry, 0),
+			nil,
+			make([]RebusEntry, 0),
+		},
+		Normal,
+		scrambleData{
+			1,
+			0,
+		},
+		unused{
+			make([]byte, 2),
+			make([]byte, 12),
+			make([]byte, 0),
+			make([]byte, 0),
+		},
+	}
+}
+
+func (p *Puzzle) AddMarkupBoard() {
+	p.Extras.extraSectionOrder = append(p.Extras.extraSectionOrder, markup)
 }
 
 func (p *Puzzle) Scrambled() bool {
@@ -171,7 +205,7 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	yOffset := y
 
 	for {
-		word += string(b[y][x].Value)
+		word += string(b[yOffset][xOffset].Value)
 
 		if dir == Across {
 			xOffset += 1
@@ -219,6 +253,7 @@ func (b Board) GetWords() []Word {
 	var words []Word
 
 	width := b.Width()
+	nextWordNum := 1
 	for y := range b.Height() {
 		for x := range width {
 			if b.IsBlackSquare(x, y) {
@@ -226,13 +261,14 @@ func (b Board) GetWords() []Word {
 			}
 
 			startsAcrossWord := b.StartsAcrossWord(x, y)
-			startsDownWord := b.StartsAcrossWord(x, y)
+			startsDownWord := b.StartsDownWord(x, y)
 
 			if startsAcrossWord {
 				word, ok := b.GetWord(x, y, Across)
 				if ok {
 					words = append(words, Word{
 						word,
+						nextWordNum,
 						x,
 						y,
 						Across,
@@ -245,11 +281,16 @@ func (b Board) GetWords() []Word {
 				if ok {
 					words = append(words, Word{
 						word,
+						nextWordNum,
 						x,
 						y,
 						Down,
 					})
 				}
+			}
+
+			if startsAcrossWord || startsDownWord {
+				nextWordNum++
 			}
 		}
 	}
@@ -259,6 +300,7 @@ func (b Board) GetWords() []Word {
 
 type Word struct {
 	Word      string
+	Num       int
 	StartX    int
 	StartY    int
 	Direction Direction
