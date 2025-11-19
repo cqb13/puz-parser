@@ -19,7 +19,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 		return nil, ErrMissingFileMagic
 	}
 	preamble, err := reader.Read(fileMagicIndex - 2)
-	puzzle.unusedData.preamble = preamble
+	puzzle.UnusedData.Preamble = preamble
 
 	foundChecksums, err := parseHeader(&reader, &puzzle)
 	if err != nil {
@@ -49,10 +49,10 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	}
 
 	postscript := reader.ReadRemaining()
-	puzzle.unusedData.postscript = postscript
+	puzzle.UnusedData.Postscript = postscript
 
 	// bytes[len(preamble):len(reader.bytes)-len(postscript)] to ensure only the actual data is checksummed
-	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
 		return nil, ErrCIBChecksumMismatch
@@ -112,7 +112,7 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.unusedData.reserved1 = reserved1
+	puzzle.UnusedData.reserved1 = reserved1
 
 	scrambledChecksum, err := reader.ReadShort()
 	if err != nil {
@@ -125,7 +125,7 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	puzzle.unusedData.reserved2 = reserved2
+	puzzle.UnusedData.reserved2 = reserved2
 
 	width, err := reader.ReadByte()
 	if err != nil {
@@ -235,7 +235,7 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 		return ErrClueCountMismatch
 	}
 
-	puzzle.Clues = make([]Clue, puzzle.expectedClues)
+	puzzle.clues = make([]Clue, puzzle.expectedClues)
 
 	notes := reader.ReadStr()
 	puzzle.Notes = notes
@@ -264,13 +264,13 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 			needsDownNum = puzzle.Board.StartsDownWord(x, y)
 
 			if needsAcrossNum {
-				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, Across)
+				puzzle.clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, Across)
 				assigned = true
 				nextClueIndex += 1
 			}
 
 			if needsDownNum {
-				puzzle.Clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, Down)
+				puzzle.clues[nextClueIndex] = NewClue(clues[nextClueIndex], nextClueNum, x, y, Down)
 				assigned = true
 				nextClueIndex += 1
 			}

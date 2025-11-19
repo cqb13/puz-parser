@@ -5,7 +5,7 @@ import "fmt"
 func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer := newPuzzleWriter()
 
-	writer.WriteBytes(puzzle.unusedData.preamble)
+	writer.WriteBytes(puzzle.UnusedData.Preamble)
 
 	err := encodeHeader(puzzle, writer)
 	if err != nil {
@@ -24,12 +24,12 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to encode extra sections: %w", err)
 	}
 
-	writer.WriteBytes(puzzle.unusedData.postscript)
+	writer.WriteBytes(puzzle.UnusedData.Postscript)
 
-	bodyBytes := writer.Bytes()[len(puzzle.unusedData.preamble) : len(writer.Bytes())-len(puzzle.unusedData.postscript)]
-	computedChecksums := computeChecksums(bodyBytes, puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.Clues, puzzle.Notes)
+	bodyBytes := writer.Bytes()[len(puzzle.UnusedData.Preamble) : len(writer.Bytes())-len(puzzle.UnusedData.Postscript)]
+	computedChecksums := computeChecksums(bodyBytes, puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes)
 
-	preambleOffset := len(puzzle.unusedData.preamble)
+	preambleOffset := len(puzzle.UnusedData.Preamble)
 	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
 	if err != nil {
 		return nil, err
@@ -62,12 +62,12 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	// placeholder for cib, maskedLow, and maskedHigh checksums, computed and inserted later
 	writer.WritePlaceholder(10)
 	writer.WriteBytes([]byte(puzzle.version)) // not using write str because it already has the null terminator
-	writer.WriteBytes(puzzle.unusedData.reserved1)
+	writer.WriteBytes(puzzle.UnusedData.reserved1)
 	writer.WriteShort(puzzle.scramble.scrambledChecksum)
-	writer.WriteBytes(puzzle.unusedData.reserved2)
+	writer.WriteBytes(puzzle.UnusedData.reserved2)
 	writer.WriteByte(byte(puzzle.Board.Width()))
 	writer.WriteByte(byte(puzzle.Board.Height()))
-	writer.WriteShort(uint16(len(puzzle.Clues)))
+	writer.WriteShort(uint16(len(puzzle.clues)))
 	writer.WriteShort(uint16(puzzle.puzzleType))
 	writer.WriteShort(puzzle.scramble.scrambledTag)
 
@@ -95,14 +95,14 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 	//TODO: make this work with adding clues
-	if len(puzzle.Clues) != int(puzzle.expectedClues) {
+	if len(puzzle.clues) != int(puzzle.expectedClues) {
 		return ErrClueCountMismatch
 	}
 
 	writer.WriteString(puzzle.Title)
 	writer.WriteString(puzzle.Author)
 	writer.WriteString(puzzle.Copyright)
-	for _, clue := range puzzle.Clues {
+	for _, clue := range puzzle.clues {
 		writer.WriteString(clue.Clue)
 	}
 	writer.WriteString(puzzle.Notes)
@@ -110,7 +110,6 @@ func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 	return nil
 }
 
-// TODO: specify which section is missing
 func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 	for _, section := range puzzle.Extras.extraSectionOrder {
 		name, ok := GetStrFromSection(section)

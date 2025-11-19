@@ -1,6 +1,9 @@
 package puz
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 const file_magic string = "ACROSS&DOWN"
 const default_version string = "1.4\x00"
@@ -69,6 +72,8 @@ const (
 	SquareCircled       MarkupSquare = 0x80
 )
 
+// TODO: method to add extra section, method to crate timer and add rebus table entries
+// TODO: method to set and get version
 type Puzzle struct {
 	Title         string
 	Author        string
@@ -77,11 +82,11 @@ type Puzzle struct {
 	version       string
 	Board         Board
 	expectedClues uint16
-	Clues         Clues
+	clues         Clues
 	Extras        extraSections
 	puzzleType    PuzzleType
 	scramble      scrambleData
-	unusedData    unused
+	UnusedData    unused
 }
 
 // TODO: make this use builder
@@ -113,6 +118,81 @@ func NewPuzzle(width uint8, height uint8) *Puzzle {
 			make([]byte, 0),
 		},
 	}
+}
+
+func (p *Puzzle) AddClue(clue Clue, validateBoardPos bool) bool {
+	if validateBoardPos {
+		if clue.Direction == Across && !p.Board.StartsAcrossWord(clue.StartX, clue.StartY) {
+			return false
+		} else if clue.Direction == Down && !p.Board.StartsDownWord(clue.StartX, clue.StartY) {
+			return false
+		}
+	}
+
+	_, ok := p.GetClueByPos(clue.StartX, clue.StartY, clue.Direction)
+	if ok {
+		return false
+	}
+
+	p.expectedClues++
+	p.clues = append(p.clues, clue)
+	p.clues.Sort()
+	return true
+}
+
+func (p *Puzzle) RemoveClueByPos(x int, y int, dir Direction) {
+	p.clues = slices.DeleteFunc(p.clues, func(c Clue) bool {
+		if c.StartX == x && c.StartY == y && c.Direction == dir {
+			p.expectedClues--
+			return true
+		}
+
+		return false
+	})
+}
+
+func (p *Puzzle) RemoveClueByNum(num int, dir Direction) {
+	p.clues = slices.DeleteFunc(p.clues, func(c Clue) bool {
+		if c.Num == num && c.Direction == dir {
+			p.expectedClues--
+			return true
+		}
+
+		return false
+	})
+}
+
+func (p *Puzzle) GetClueByPos(x int, y int, dir Direction) (*Clue, bool) {
+	for _, clue := range p.clues {
+		if clue.Direction == dir && clue.StartX == x && clue.StartY == y {
+			return &clue, true
+		}
+	}
+
+	return nil, false
+}
+
+func (p *Puzzle) GetClueByNum(num int, dir Direction) (*Clue, bool) {
+	for _, clue := range p.clues {
+		if clue.Direction == dir && clue.Num == num {
+			return &clue, true
+		}
+	}
+
+	return nil, false
+}
+
+func (p *Puzzle) GetClues() *Clues {
+	return &p.clues
+}
+
+func (p *Puzzle) SetClues(clues Clues) {
+	p.clues = clues
+	p.expectedClues = uint16(len(clues))
+}
+
+func (p *Puzzle) GetExpectedClues() int {
+	return int(p.expectedClues)
 }
 
 func (p *Puzzle) AddMarkupBoard() {
@@ -306,8 +386,6 @@ type Word struct {
 	Direction Direction
 }
 
-// TODO: add a method to get the markups square type
-// TODO: rename Value to solution or answer maybe
 type Cell struct {
 	Value    byte
 	State    byte
@@ -315,8 +393,23 @@ type Cell struct {
 	Markup   byte
 }
 
-// TODO: add a sort method to clues to sort based on pos if same pos then dir
 type Clues []Clue
+
+func (c Clues) Sort() {
+	slices.SortStableFunc(c, func(a Clue, b Clue) int {
+		diff := a.StartX - b.StartX
+
+		if diff == 0 {
+			diff = a.StartY - b.StartY
+		}
+
+		if diff == 0 {
+			diff = int(a.Direction) - int(b.Direction)
+		}
+
+		return diff
+	})
+}
 
 type Clue struct {
 	Clue      string
@@ -361,6 +454,6 @@ type scrambleData struct {
 type unused struct {
 	reserved1  []byte
 	reserved2  []byte
-	preamble   []byte
-	postscript []byte
+	Preamble   []byte
+	Postscript []byte
 }
