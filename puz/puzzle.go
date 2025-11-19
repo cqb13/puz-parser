@@ -3,6 +3,7 @@ package puz
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 const file_magic string = "ACROSS&DOWN"
@@ -73,7 +74,6 @@ const (
 )
 
 // TODO: method to add extra section, method to crate timer and add rebus table entries
-// TODO: method to set and get version
 type Puzzle struct {
 	Title         string
 	Author        string
@@ -118,6 +118,22 @@ func NewPuzzle(width uint8, height uint8) *Puzzle {
 			make([]byte, 0),
 		},
 	}
+}
+
+func (p *Puzzle) SetVersion(version string) error {
+	bytes := []byte(version)
+
+	if len(version) != 3 || bytes[1] != '.' {
+		return ErrInvalidVersionFormat
+	}
+
+	p.version = version + "\x00"
+
+	return nil
+}
+
+func (p *Puzzle) Version() string {
+	return p.version
 }
 
 func (p *Puzzle) AddClue(clue Clue, validateBoardPos bool) bool {
@@ -182,7 +198,7 @@ func (p *Puzzle) GetClueByNum(num int, dir Direction) (*Clue, bool) {
 	return nil, false
 }
 
-func (p *Puzzle) GetClues() *Clues {
+func (p *Puzzle) Clues() *Clues {
 	return &p.clues
 }
 
@@ -191,7 +207,7 @@ func (p *Puzzle) SetClues(clues Clues) {
 	p.expectedClues = uint16(len(clues))
 }
 
-func (p *Puzzle) GetExpectedClues() int {
+func (p *Puzzle) ExpectedClues() int {
 	return int(p.expectedClues)
 }
 
