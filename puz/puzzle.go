@@ -3,7 +3,6 @@ package puz
 import (
 	"fmt"
 	"slices"
-	"strings"
 )
 
 const file_magic string = "ACROSS&DOWN"
