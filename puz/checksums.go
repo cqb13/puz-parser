@@ -7,7 +7,7 @@ type checksums struct {
 	maskedHighChecksum [4]byte
 }
 
-func computeChecksums(bytes []byte, size int, title string, author string, copyright string, clues []Clue, notes string) *checksums {
+func computeChecksums(bytes []byte, size int, title string, author string, copyright string, clues []Clue, notes string, version string) *checksums {
 	//cib checksum
 	computedCibChecksum := checksumRegion(bytes[44:52], 0)
 
@@ -18,7 +18,7 @@ func computeChecksums(bytes []byte, size int, title string, author string, copyr
 	offset += size
 	computedChecksum = checksumRegion(bytes[offset:offset+size], computedChecksum)
 
-	computedChecksum = checksumStrings(title, author, copyright, clues, notes, computedChecksum)
+	computedChecksum = checksumStrings(title, author, copyright, clues, notes, computedChecksum, version)
 
 	// masked checksum
 	checksumCIB := checksumRegion(bytes[44:52], 0x0000)
@@ -27,7 +27,7 @@ func computeChecksums(bytes []byte, size int, title string, author string, copyr
 	offset += size
 	stateChecksum := checksumRegion(bytes[offset:offset+size], 0x0000)
 
-	stringsChecksum := checksumStrings(title, author, copyright, clues, notes, 0x0000)
+	stringsChecksum := checksumStrings(title, author, copyright, clues, notes, 0x0000, version)
 
 	maskedLowCheck := make([]byte, 4)
 	maskedLowCheck[0] = 0x49 ^ byte((checksumCIB & 0xFF))
@@ -49,8 +49,7 @@ func computeChecksums(bytes []byte, size int, title string, author string, copyr
 	}
 }
 
-// TODO: version check for notes checksum, only on 1.3 +
-func checksumStrings(title string, author string, copyright string, clues []Clue, notes string, checksum uint16) uint16 {
+func checksumStrings(title string, author string, copyright string, clues []Clue, notes string, checksum uint16, version string) uint16 {
 	if len(title) > 0 {
 		checksum = checksumRegion(append([]byte(title), 0x00), checksum)
 	}
@@ -67,7 +66,8 @@ func checksumStrings(title string, author string, copyright string, clues []Clue
 		checksum = checksumRegion([]byte(clue.Clue), checksum)
 	}
 
-	if len(notes) > 0 {
+	// some puzzles like Washington post do not comply with null byte after version
+	if len(notes) > 0 && version[:3] > "1.3" {
 		checksum = checksumRegion(append([]byte(notes), 0x00), checksum)
 	}
 

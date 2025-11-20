@@ -12,7 +12,6 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 ## TODO
 
 - Tests for extra sections
-- Tests for proper checksuming with versions
 - Tests for adding and removing clues
 - Tests for getting words from board
 - Better errors

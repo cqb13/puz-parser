@@ -27,7 +27,7 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer.WriteBytes(puzzle.UnusedData.Postscript)
 
 	bodyBytes := writer.Bytes()[len(puzzle.UnusedData.Preamble) : len(writer.Bytes())-len(puzzle.UnusedData.Postscript)]
-	computedChecksums := computeChecksums(bodyBytes, puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bodyBytes, puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes, puzzle.version)
 
 	preambleOffset := len(puzzle.UnusedData.Preamble)
 	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
@@ -94,7 +94,6 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
 }
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
-	//TODO: make this work with adding clues
 	if len(puzzle.clues) != int(puzzle.expectedClues) {
 		return ErrClueCountMismatch
 	}

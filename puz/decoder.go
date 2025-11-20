@@ -52,7 +52,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	puzzle.UnusedData.Postscript = postscript
 
 	// bytes[len(preamble):len(reader.bytes)-len(postscript)] to ensure only the actual data is checksummed
-	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes)
+	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes, puzzle.version)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
 		return nil, ErrCIBChecksumMismatch

@@ -72,7 +72,6 @@ const (
 	SquareCircled       MarkupSquare = 0x80
 )
 
-// TODO: method to add extra section, method to crate timer and add rebus table entries
 type Puzzle struct {
 	Title         string
 	Author        string
@@ -88,7 +87,6 @@ type Puzzle struct {
 	UnusedData    unused
 }
 
-// TODO: make this use builder
 func NewPuzzle(width uint8, height uint8) *Puzzle {
 	return &Puzzle{
 		"",
