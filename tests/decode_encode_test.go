@@ -14,9 +14,10 @@ func TestDecodeAndEncode(t *testing.T) {
 		"Crossword-PreAndPost-Scrambled.puz",
 		"Crossword-PreAndPost.puz",
 		"Crossword-PreAndPost.puz",
-		"Crossword-1.3.puz",
 		"Crossword.puz",
+		"Crossword-1.2.puz",
 		"washpost.puz",
+		"NYT-Nov2193.puz",
 	}
 
 	for _, name := range testCases {

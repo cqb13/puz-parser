@@ -105,7 +105,7 @@ func NewPuzzle(width uint8, height uint8) *Puzzle {
 		},
 		Normal,
 		scrambleData{
-			1,
+			0, //TODO: check that this is right
 			0,
 		},
 		unused{
@@ -130,7 +130,36 @@ func (p *Puzzle) SetVersion(version string) error {
 }
 
 func (p *Puzzle) Version() string {
-	return p.version
+	return p.version[:3]
+}
+
+func (p *Puzzle) Clues() Clues {
+	return p.clues
+}
+
+func (p *Puzzle) SetClues(clues Clues) {
+	p.clues = clues
+	p.expectedClues = uint16(len(clues))
+}
+
+func (p *Puzzle) GetClueByPos(x int, y int, dir Direction) (*Clue, bool) {
+	for _, clue := range p.clues {
+		if clue.Direction == dir && clue.StartX == x && clue.StartY == y {
+			return &clue, true
+		}
+	}
+
+	return nil, false
+}
+
+func (p *Puzzle) GetClueByNum(num int, dir Direction) (*Clue, bool) {
+	for _, clue := range p.clues {
+		if clue.Direction == dir && clue.Num == num {
+			return &clue, true
+		}
+	}
+
+	return nil, false
 }
 
 func (p *Puzzle) AddClue(clue Clue, validateBoardPos bool) bool {
@@ -173,35 +202,6 @@ func (p *Puzzle) RemoveClueByNum(num int, dir Direction) {
 
 		return false
 	})
-}
-
-func (p *Puzzle) GetClueByPos(x int, y int, dir Direction) (*Clue, bool) {
-	for _, clue := range p.clues {
-		if clue.Direction == dir && clue.StartX == x && clue.StartY == y {
-			return &clue, true
-		}
-	}
-
-	return nil, false
-}
-
-func (p *Puzzle) GetClueByNum(num int, dir Direction) (*Clue, bool) {
-	for _, clue := range p.clues {
-		if clue.Direction == dir && clue.Num == num {
-			return &clue, true
-		}
-	}
-
-	return nil, false
-}
-
-func (p *Puzzle) Clues() *Clues {
-	return &p.clues
-}
-
-func (p *Puzzle) SetClues(clues Clues) {
-	p.clues = clues
-	p.expectedClues = uint16(len(clues))
 }
 
 func (p *Puzzle) ExpectedClues() int {

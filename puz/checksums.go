@@ -67,7 +67,7 @@ func checksumStrings(title string, author string, copyright string, clues []Clue
 	}
 
 	// some puzzles like Washington post do not comply with null byte after version
-	if len(notes) > 0 && version[:3] > "1.3" {
+	if len(notes) > 0 && version[:3] >= "1.3" {
 		checksum = checksumRegion(append([]byte(notes), 0x00), checksum)
 	}
 
