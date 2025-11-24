@@ -208,7 +208,7 @@ func (p *Puzzle) ExpectedClues() int {
 }
 
 func (p *Puzzle) AddExtraSection(section ExtraSection) bool {
-	if slices.Contains(p.Extras.extraSectionOrder, section) {
+	if p.HasExtraSection(section) {
 		return false
 	}
 
@@ -227,6 +227,25 @@ func (p *Puzzle) RemoveExtraSection(section ExtraSection) bool {
 	p.Extras.extraSectionOrder = append(p.Extras.extraSectionOrder[:index], p.Extras.extraSectionOrder[index+1:]...)
 
 	return true
+}
+
+func (p *Puzzle) HasExtraSection(section ExtraSection) bool {
+	return slices.Contains(p.Extras.extraSectionOrder, section)
+}
+
+/*
+Sorts extra sections to comply with standard order
+
+1. RebusSection           GRBS
+2. RebusTableSection      RTBL
+3. TimerSection           LTIM
+4. MarkupBoardSection     GEXT
+5. UserRebusTableSection  RUSR
+*/
+func (p *Puzzle) SortExtraSections() {
+	slices.SortFunc(p.Extras.extraSectionOrder, func(a ExtraSection, b ExtraSection) int {
+		return int(a) - int(b)
+	})
 }
 
 func (p *Puzzle) Scrambled() bool {
