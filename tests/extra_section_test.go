@@ -19,19 +19,29 @@ func TestGRBSandRTBL(t *testing.T) {
 		t.Fatalf("Failed to decode %s: %v", name, err)
 	}
 
-	//TODO: add checks for other 2
+	if !puzzle.HasExtraSection(puz.RebusSection) {
+		t.Errorf("Failed to find expected GRBS section")
+	}
 
-	if puzzle.Extras.RebusTable == nil {
+	if !puzzle.HasExtraSection(puz.RebusTableSection) {
 		t.Errorf("Failed to find expected RTBL section")
 	}
 
-	if puzzle.Extras.Timer != nil {
+	if puzzle.HasExtraSection(puz.TimerSection) {
 		t.Errorf("Found unexpected LTIM section")
 	}
 
-	if puzzle.Extras.UserRebusTable != nil {
+	if puzzle.HasExtraSection(puz.MarkupBoardSection) {
+		t.Errorf("Found unexpected GEXT section")
+	}
+
+	if puzzle.HasExtraSection(puz.UserRebusTableSection) {
 		t.Errorf("Found unexpected RUSR section")
 	}
 }
 
 //TODO: test puzzle with all sections
+
+//TODO: test adding and removing sections
+
+//TODO: test sorting sections
