@@ -68,7 +68,7 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	writer.WriteByte(byte(puzzle.Board.Width()))
 	writer.WriteByte(byte(puzzle.Board.Height()))
 	writer.WriteShort(uint16(len(puzzle.clues)))
-	writer.WriteShort(uint16(puzzle.puzzleType))
+	writer.WriteShort(uint16(puzzle.PuzzleType))
 	writer.WriteShort(puzzle.scramble.scrambledTag)
 
 	return nil
@@ -111,15 +111,10 @@ func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 
 func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 	for _, section := range puzzle.Extras.extraSectionOrder {
-		name, ok := GetStrFromSection(section)
-		if !ok {
-			return ErrUknownExtraSectionName
-		}
-
 		var data []byte
 
 		switch section {
-		case rebus, markup:
+		case RebusSection, MarkupBoardSection:
 
 			height := puzzle.Board.Height()
 			width := puzzle.Board.Width()
@@ -131,7 +126,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 				for x := range width {
 					var val byte
 
-					if section == rebus {
+					if section == RebusSection {
 						val = puzzle.Board[y][x].RebusKey
 					} else {
 						val = puzzle.Board[y][x].Markup
@@ -142,7 +137,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 			}
 
 			data = board
-		case rebusTable:
+		case RebusTableSection:
 			if puzzle.Extras.RebusTable == nil {
 				return ErrMissingExtraSection
 			}
@@ -154,7 +149,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 				}
 				data = fmt.Appendf(data, "%s%d:%s;", padding, entry.Key-1, entry.Value)
 			}
-		case timer:
+		case TimerSection:
 			if puzzle.Extras.Timer == nil {
 				return ErrMissingExtraSection
 			}
@@ -166,7 +161,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 			}
 
 			data = fmt.Appendf(data, "%d,%d", puzzle.Extras.Timer.SecondsPassed, runningRep)
-		case userRebusTable:
+		case UserRebusTableSection:
 			if puzzle.Extras.UserRebusTable == nil {
 				return ErrMissingExtraSection
 			}
@@ -183,8 +178,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 		sectionLength := uint16(len(data))
 		checksum := checksumRegion(data, 0x00)
 
-		// name str should not have a null terminator
-		writer.WriteBytes([]byte(name))
+		writer.WriteBytes([]byte(section.String()))
 		writer.WriteShort(sectionLength)
 		writer.WriteShort(checksum)
 		writer.WriteBytes(data)

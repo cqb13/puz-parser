@@ -78,6 +78,28 @@ func convertNumbersToLetters(buffer []byte) {
 	}
 }
 
+func shiftString(unscrambled string, num int) string {
+	return unscrambled[num:] + unscrambled[:num]
+}
+
+func scrambleString(unscrambled string) string {
+	mid := len(unscrambled) / 2
+	front := unscrambled[:mid]
+	back := unscrambled[mid:]
+
+	scrambled := ""
+
+	for i := range len(front) {
+		scrambled += string(back[i]) + string(front[i])
+	}
+
+	if len(unscrambled)%2 != 0 {
+		scrambled += string(back[len(back)-1])
+	}
+
+	return scrambled
+}
+
 func scramble(puzzle *Puzzle, key int) error {
 	keyDigits, err := keyToBytes(key)
 	if err != nil {

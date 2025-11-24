@@ -149,9 +149,9 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 		return nil, err
 	}
 	if bitmask == uint16(Diagramless) {
-		puzzle.puzzleType = Diagramless
+		puzzle.PuzzleType = Diagramless
 	} else {
-		puzzle.puzzleType = Normal
+		puzzle.PuzzleType = Normal
 	}
 
 	scrambledTag, err := reader.ReadShort()
@@ -324,10 +324,10 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	puzzle.Extras.extraSectionOrder = append(puzzle.Extras.extraSectionOrder, section)
 
 	switch section {
-	case rebus:
+	case RebusSection:
 		height := puzzle.Board.Height()
 		width := puzzle.Board.Width()
-		board, err := parseExtraSectionBoard(data, width, height, puzzle)
+		board, err := parseExtraSectionBoard(data, width, height)
 		if err != nil {
 			return err
 		}
@@ -337,22 +337,22 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 				puzzle.Board[y][x].RebusKey = board[y][x]
 			}
 		}
-	case rebusTable:
+	case RebusTableSection:
 		tbl, err := parseExtraSectionRebusTbl(data)
 		if err != nil {
 			return err
 		}
 		puzzle.Extras.RebusTable = tbl
-	case timer:
+	case TimerSection:
 		timer, err := parseExtraTimerSection(data)
 		if err != nil {
 			return err
 		}
 		puzzle.Extras.Timer = timer
-	case markup:
+	case MarkupBoardSection:
 		height := puzzle.Board.Height()
 		width := puzzle.Board.Width()
-		board, err := parseExtraSectionBoard(data, width, height, puzzle)
+		board, err := parseExtraSectionBoard(data, width, height)
 		if err != nil {
 			return err
 		}
@@ -362,7 +362,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 				puzzle.Board[y][x].Markup = board[y][x]
 			}
 		}
-	case userRebusTable:
+	case UserRebusTableSection:
 		tbl, err := parseExtraSectionRebusTbl(data)
 		if err != nil {
 			return err
@@ -379,7 +379,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	return nil
 }
 
-func parseExtraSectionBoard(bytes []byte, width int, height int, puzzle *Puzzle) ([][]byte, error) {
+func parseExtraSectionBoard(bytes []byte, width int, height int) ([][]byte, error) {
 	size := width * height
 	if len(bytes) != size {
 		return nil, ErrUnreadableData

@@ -26,40 +26,39 @@ const (
 	Down
 )
 
-type extraSection int
+type ExtraSection int
 
 const (
-	rebus          extraSection = iota // GRBS
-	rebusTable                         // RTBL
-	timer                              // LTIM
-	markup                             // GEXT
-	userRebusTable                     // RUSR
+	RebusSection          ExtraSection = iota // GRBS
+	RebusTableSection                         // RTBL
+	TimerSection                              // LTIM
+	MarkupBoardSection                        // GEXT
+	UserRebusTableSection                     // RUSR
 )
 
-var sectionMap = map[string]extraSection{
-	"GRBS": rebus,
-	"RTBL": rebusTable,
-	"LTIM": timer,
-	"GEXT": markup,
-	"RUSR": userRebusTable,
+var sectionMap = map[string]ExtraSection{
+	"GRBS": RebusSection,
+	"RTBL": RebusTableSection,
+	"LTIM": TimerSection,
+	"GEXT": MarkupBoardSection,
+	"RUSR": UserRebusTableSection,
 }
 
-var sectionStrMap = map[extraSection]string{
-	rebus:          "GRBS",
-	rebusTable:     "RTBL",
-	timer:          "LTIM",
-	markup:         "GEXT",
-	userRebusTable: "RUSR",
+var sectionStrMap = map[ExtraSection]string{
+	RebusSection:          "GRBS",
+	RebusTableSection:     "RTBL",
+	TimerSection:          "LTIM",
+	MarkupBoardSection:    "GEXT",
+	UserRebusTableSection: "RUSR",
 }
 
-func GetSectionFromString(s string) (extraSection, bool) {
+func GetSectionFromString(s string) (ExtraSection, bool) {
 	section, ok := sectionMap[s]
 	return section, ok
 }
 
-func GetStrFromSection(s extraSection) (string, bool) {
-	section, ok := sectionStrMap[s]
-	return section, ok
+func (s ExtraSection) String() string {
+	return sectionStrMap[s]
 }
 
 type MarkupSquare byte
@@ -82,7 +81,7 @@ type Puzzle struct {
 	expectedClues uint16
 	clues         Clues
 	Extras        extraSections
-	puzzleType    PuzzleType
+	PuzzleType    PuzzleType
 	scramble      scrambleData
 	UnusedData    unused
 }
@@ -98,14 +97,14 @@ func NewPuzzle(width uint8, height uint8) *Puzzle {
 		0,
 		make([]Clue, 0),
 		extraSections{
-			make([]extraSection, 0),
+			make([]ExtraSection, 0),
 			make([]RebusEntry, 0),
 			nil,
 			make([]RebusEntry, 0),
 		},
 		Normal,
 		scrambleData{
-			0, //TODO: check that this is right
+			0,
 			0,
 		},
 		unused{
@@ -208,8 +207,26 @@ func (p *Puzzle) ExpectedClues() int {
 	return int(p.expectedClues)
 }
 
-func (p *Puzzle) AddMarkupBoard() {
-	p.Extras.extraSectionOrder = append(p.Extras.extraSectionOrder, markup)
+func (p *Puzzle) AddExtraSection(section ExtraSection) bool {
+	if slices.Contains(p.Extras.extraSectionOrder, section) {
+		return false
+	}
+
+	p.Extras.extraSectionOrder = append(p.Extras.extraSectionOrder, section)
+
+	return true
+}
+
+func (p *Puzzle) RemoveExtraSection(section ExtraSection) bool {
+	index := slices.Index(p.Extras.extraSectionOrder, section)
+
+	if index == -1 {
+		return false
+	}
+
+	p.Extras.extraSectionOrder = append(p.Extras.extraSectionOrder[:index], p.Extras.extraSectionOrder[index+1:]...)
+
+	return true
 }
 
 func (p *Puzzle) Scrambled() bool {
@@ -218,12 +235,12 @@ func (p *Puzzle) Scrambled() bool {
 
 func (p *Puzzle) Unscramble(key int) error {
 	if !p.Scrambled() {
-		return fmt.Errorf("Puzzle is already unscrambled")
+		return ErrPuzzleIsUnscrambled
 	}
 
 	err := unscramble(p, key)
 	if err != nil {
-		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+		return fmt.Errorf("Failed to unscramble crossword: %w", err)
 	}
 
 	return nil
@@ -231,12 +248,12 @@ func (p *Puzzle) Unscramble(key int) error {
 
 func (p *Puzzle) Scramble(key int) error {
 	if p.Scrambled() {
-		return fmt.Errorf("Puzzle is already scrambled")
+		return ErrPuzzleIsScrambled
 	}
 
 	err := scramble(p, key)
 	if err != nil {
-		return fmt.Errorf("Failed to unscramble crossword: %s", err)
+		return fmt.Errorf("Failed to unscramble crossword: %w", err)
 	}
 
 	return nil
@@ -443,7 +460,7 @@ func NewClue(clue string, num int, x int, y int, dir Direction) Clue {
 }
 
 type extraSections struct {
-	extraSectionOrder []extraSection
+	extraSectionOrder []ExtraSection
 	RebusTable        []RebusEntry
 	Timer             *TimerData
 	UserRebusTable    []RebusEntry
