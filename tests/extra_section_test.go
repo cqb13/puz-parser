@@ -40,8 +40,42 @@ func TestGRBSandRTBL(t *testing.T) {
 	}
 }
 
+func TestAddingAndRemoving(t *testing.T) {
+	name := "Crossword-EXT-Rebus.puz"
+	data, err := loadFile(name)
+	if err != nil {
+		t.Fatalf("Failed to load %s: %v", name, err)
+	}
+
+	puzzle, err := puz.DecodePuz(data)
+	if err != nil {
+		t.Fatalf("Failed to decode %s: %v", name, err)
+	}
+
+	if !puzzle.HasExtraSection(puz.RebusSection) {
+		t.Errorf("Failed to find expected GRBS section")
+	}
+
+	ok := puzzle.RemoveExtraSection(puz.RebusSection)
+	if !ok {
+		t.Errorf("Failed to remove GRBS section")
+	}
+
+	if puzzle.HasExtraSection(puz.RebusSection) {
+		t.Errorf("GRBS section present after removal")
+	}
+
+	ok = puzzle.AddExtraSection(puz.RebusSection)
+
+	if !ok {
+		t.Errorf("Failed to add GRBS section")
+	}
+
+	if !puzzle.HasExtraSection(puz.RebusSection) {
+		t.Errorf("Failed to find added GRBS section")
+	}
+}
+
 //TODO: test puzzle with all sections
 
-//TODO: test adding and removing sections
-
-//TODO: test sorting sections
+//TODO: test sorting sections (take puzzle with all sections, make copy with mixed up section order, then run sort and check if new order is same as normal)
