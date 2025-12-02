@@ -99,7 +99,10 @@ func NewPuzzle(width uint8, height uint8) *Puzzle {
 		extraSections{
 			make([]ExtraSection, 0),
 			make([]RebusEntry, 0),
-			nil,
+			TimerData{
+				0,
+				false,
+			},
 			make([]RebusEntry, 0),
 		},
 		Normal,
@@ -481,7 +484,7 @@ func NewClue(clue string, num int, x int, y int, dir Direction) Clue {
 type extraSections struct {
 	extraSectionOrder []ExtraSection
 	RebusTable        []RebusEntry
-	Timer             *TimerData
+	Timer             TimerData
 	UserRebusTable    []RebusEntry
 }
 

@@ -348,7 +348,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		if err != nil {
 			return err
 		}
-		puzzle.Extras.Timer = timer
+		puzzle.Extras.Timer = *timer
 	case MarkupBoardSection:
 		height := puzzle.Board.Height()
 		width := puzzle.Board.Width()

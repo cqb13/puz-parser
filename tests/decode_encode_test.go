@@ -9,6 +9,8 @@ import (
 
 func TestDecodeAndEncode(t *testing.T) {
 	testCases := []string{
+		"All-Sections-Sorted.puz",
+		"All-Sections-Unsorted.puz",
 		"Crossword-Blank-Squares.puz",
 		"Crossword-EXT-Rebus.puz",
 		"Crossword-PreAndPost-Scrambled.puz",

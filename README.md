@@ -11,7 +11,7 @@ A .PUZ file decoder and encoder based on the format specified [here](https://cod
 
 ## TODO
 
-- Tests for extra sections
+- Rewrite scramble
 - Tests for adding and removing clues
 - Tests for getting words from board
 - Better errors

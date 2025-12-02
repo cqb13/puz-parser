@@ -150,10 +150,6 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 				data = fmt.Appendf(data, "%s%d:%s;", padding, entry.Key-1, entry.Value)
 			}
 		case TimerSection:
-			if puzzle.Extras.Timer == nil {
-				return ErrMissingExtraSection
-			}
-
 			runningRep := 0
 
 			if !puzzle.Extras.Timer.Running {
