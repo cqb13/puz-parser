@@ -275,7 +275,7 @@ func (p *Puzzle) Scramble(key int) error {
 
 	err := scramble(p, key)
 	if err != nil {
-		return fmt.Errorf("Failed to unscramble crossword: %w", err)
+		return fmt.Errorf("Failed to scramble crossword: %w", err)
 	}
 
 	return nil

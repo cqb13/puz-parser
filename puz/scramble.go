@@ -34,6 +34,39 @@ func createScrambleBuffer(puzzle *Puzzle) []byte {
 	return buffer[:n]
 }
 
+func createScramble(puzzle *Puzzle) string {
+	height := puzzle.Board.Height()
+	width := puzzle.Board.Width()
+
+	scramble := ""
+
+	for x := range width {
+		for y := range height {
+			ch := puzzle.Board[y][x].Value
+			if isLetter(ch) {
+				scramble += string(ch)
+			}
+		}
+	}
+
+	return scramble
+}
+
+func updatePuzzleSolutionV2(puzzle *Puzzle, newSol string) {
+	height := puzzle.Board.Height()
+	width := puzzle.Board.Width()
+	var n = 0
+
+	for x := range width {
+		for y := range height {
+			if isLetter(puzzle.Board[y][x].Value) {
+				puzzle.Board[y][x].Value = newSol[n]
+				n++
+			}
+		}
+	}
+}
+
 func updatePuzzleSolution(puzzle *Puzzle, buffer []byte) {
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()
@@ -78,6 +111,45 @@ func convertNumbersToLetters(buffer []byte) {
 	}
 }
 
+func scramble(puzzle *Puzzle, key int) error {
+	keyDigits, err := keyToBytes(key)
+	if err != nil {
+		return err
+	}
+
+	scramble := createScramble(puzzle)
+
+	if len(scramble) < 12 {
+		return ErrTooFewCharactersToScramble
+	}
+
+	puzzle.scramble.scrambledChecksum = checksumRegion([]byte(scramble), 0)
+	puzzle.scramble.scrambledTag = 4
+
+	for _, digit := range keyDigits {
+		lastScramble := scramble
+		scramble = ""
+
+		for i, letter := range lastScramble {
+			letterVal := byte(letter) + keyDigits[i%4]
+
+			// make sure letters are uppercase
+			if letterVal > 90 {
+				letterVal -= 26
+			}
+
+			scramble += string(letterVal)
+		}
+
+		scramble = shiftString(scramble, int(digit))
+		scramble = scrambleString(scramble)
+	}
+
+	updatePuzzleSolutionV2(puzzle, scramble)
+
+	return nil
+}
+
 func shiftString(unscrambled string, num int) string {
 	return unscrambled[num:] + unscrambled[:num]
 }
@@ -98,85 +170,6 @@ func scrambleString(unscrambled string) string {
 	}
 
 	return scrambled
-}
-
-func scramble(puzzle *Puzzle, key int) error {
-	keyDigits, err := keyToBytes(key)
-	if err != nil {
-		return err
-	}
-
-	letterBuffer := createScrambleBuffer(puzzle)
-	totalLetters := len(letterBuffer)
-
-	if totalLetters < 12 {
-		return ErrTooFewCharactersToScramble
-	}
-
-	puzzle.scramble.scrambledChecksum = checksumRegion(letterBuffer, 0)
-	puzzle.scramble.scrambledTag = 4
-
-	convertLettersToNumbers(letterBuffer)
-
-	tempBuffer := make([]byte, totalLetters)
-
-	copy(tempBuffer, letterBuffer)
-	position := -1
-	for i := range totalLetters {
-		position += 16
-		for position >= totalLetters {
-			if totalLetters%2 == 0 {
-				position -= totalLetters + 1
-			} else {
-				position -= totalLetters
-			}
-		}
-		letterBuffer[position] = tempBuffer[i]
-	}
-
-	for round := range 4 {
-		stepSize := 1 << (4 - round)
-
-		position := -1
-		for i := range totalLetters {
-			position += stepSize
-			for position >= totalLetters {
-				if totalLetters%2 == 0 {
-					position -= totalLetters + 1
-				} else {
-					position -= totalLetters
-				}
-			}
-			keyOffset := int(keyDigits[i%4])
-			letterBuffer[position] = byte((int(letterBuffer[position]) + keyOffset) % 26)
-		}
-
-		if stepSize > totalLetters {
-			if totalLetters%2 == 0 {
-				stepSize -= totalLetters + 1
-			} else {
-				stepSize -= totalLetters
-			}
-		}
-
-		for repeat := 0; repeat < int(keyDigits[round]); repeat++ {
-			copy(tempBuffer, letterBuffer[:stepSize])
-
-			if totalLetters%2 == 0 {
-				last := tempBuffer[stepSize-1]
-				copy(tempBuffer[1:], tempBuffer[:stepSize-1])
-				tempBuffer[0] = last
-			}
-
-			copy(letterBuffer, letterBuffer[stepSize:])
-			copy(letterBuffer[totalLetters-stepSize:], tempBuffer[:stepSize])
-		}
-	}
-
-	convertNumbersToLetters(letterBuffer)
-	updatePuzzleSolution(puzzle, letterBuffer)
-
-	return nil
 }
 
 func unscramble(puzzle *Puzzle, key int) error {
