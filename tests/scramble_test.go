@@ -66,7 +66,8 @@ func TestUnscramble(t *testing.T) {
 			for y := range puzzle.Board {
 				for x := range puzzle.Board[y] {
 					if puzzle.Board[y][x].Value != checkPuzzle.Board[y][x].Value {
-						t.Errorf("Cell x: %d y: %d mismatch after unscramble", x, y)
+						t.Errorf("Cell x: %d y: %d mismatch after unscramble (%c != %c)", x, y, puzzle.Board[y][x].Value, checkPuzzle.Board[y][x].Value)
+
 					}
 				}
 			}
@@ -110,7 +111,7 @@ func TestScramble(t *testing.T) {
 			for y := range puzzle.Board {
 				for x := range puzzle.Board[y] {
 					if puzzle.Board[y][x].Value != checkPuzzle.Board[y][x].Value {
-						t.Errorf("Cell x: %d y: %d mismatch after scramble", x, y)
+						t.Errorf("Cell x: %d y: %d mismatch after scramble (%c != %c)", x, y, puzzle.Board[y][x].Value, checkPuzzle.Board[y][x].Value)
 					}
 				}
 			}
