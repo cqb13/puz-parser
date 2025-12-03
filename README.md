@@ -1,6 +1,6 @@
 # PUZ Parser
 
-A .PUZ file decoder and encoder based on the format specified [here](https://code.google.com/archive/p/puz/wikis/FileFormat.wiki).
+A PUZ file decoder and encoder based on the format specified [here](https://code.google.com/archive/p/puz/wikis/FileFormat.wiki).
 
 ## Features
 
