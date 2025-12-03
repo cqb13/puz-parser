@@ -19,6 +19,7 @@ func TestDecodeAndEncode(t *testing.T) {
 		"Crossword.puz",
 		"Crossword-1.2.puz",
 		"washpost.puz",
+		"NYT-Locked.puz",
 		"NYT-Diagramless.puz",
 		"NYT-Nov2193.puz",
 	}
