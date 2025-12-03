@@ -86,6 +86,46 @@ func TestGettingClues(t *testing.T) {
 	}
 }
 
-//TODO: tests adding and removing clues
+func TestAddingAndRemovingClues(t *testing.T) {
+	name := "Crossword.puz"
+	data, err := loadFile(name)
+	if err != nil {
+		t.Fatalf("Failed to load %s: %v", name, err)
+	}
 
-//TODO: test sorting clues
+	puzzle, err := puz.DecodePuz(data)
+	if err != nil {
+		t.Fatalf("Failed to decode %s: %v", name, err)
+	}
+
+	if len(puzzle.Clues()) != puzzle.ExpectedClues() {
+		t.Fatalf("Clue amount did not match expected clue count on initial load")
+	}
+}
+
+func TestClueDirectionSorting(t *testing.T) {
+	var clues puz.Clues
+
+	clues = append(clues, puz.NewClue("clue 2", 1, 0, 0, puz.Down))
+	clues = append(clues, puz.NewClue("clue 1", 1, 0, 0, puz.Across))
+
+	clues.Sort()
+
+	if clues[0].Direction != puz.Across {
+		t.Fatalf("Failed to properly sort clues by direction at the same position")
+	}
+}
+
+func TestCluePositionSorting(t *testing.T) {
+	var clues puz.Clues
+
+	clues = append(clues, puz.NewClue("clue 3", 1, 1, 0, puz.Across))
+	clues = append(clues, puz.NewClue("clue 1", 0, 0, 0, puz.Across))
+	clues = append(clues, puz.NewClue("clue 2", 1, 0, 0, puz.Across))
+
+	clues.Sort()
+
+	if clues[0].Clue != "clue 1" || clues[1].Clue != "clue 2" || clues[2].Clue != "clue 3" {
+		t.Fatalf("Failed to properly sort clues by position")
+	}
+}
