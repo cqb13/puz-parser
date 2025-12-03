@@ -14,6 +14,7 @@ A PUZ file decoder and encoder based on the format specified [here](https://code
 - Tests for adding and removing clues
 - Tests for getting words from board
 - Tests for puzzle loading (ensure proper name, description, copyright, version, etc...)
+- Init puzzle from board
 - Better errors
 - Docs
 
