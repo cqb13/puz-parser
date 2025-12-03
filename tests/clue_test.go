@@ -86,23 +86,6 @@ func TestGettingClues(t *testing.T) {
 	}
 }
 
-func TestAddingAndRemovingClues(t *testing.T) {
-	name := "Crossword.puz"
-	data, err := loadFile(name)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", name, err)
-	}
-
-	puzzle, err := puz.DecodePuz(data)
-	if err != nil {
-		t.Fatalf("Failed to decode %s: %v", name, err)
-	}
-
-	if len(puzzle.Clues()) != puzzle.ExpectedClues() {
-		t.Fatalf("Clue amount did not match expected clue count on initial load")
-	}
-}
-
 func TestClueDirectionSorting(t *testing.T) {
 	var clues puz.Clues
 
@@ -128,4 +111,93 @@ func TestCluePositionSorting(t *testing.T) {
 	if clues[0].Clue != "clue 1" || clues[1].Clue != "clue 2" || clues[2].Clue != "clue 3" {
 		t.Fatalf("Failed to properly sort clues by position")
 	}
+}
+
+func TestAddingAndRemovingClues(t *testing.T) {
+	p := puz.NewPuzzle(5, 5)
+
+	if len(p.Clues()) != p.ExpectedClues() {
+		t.Fatalf("Initial clue count did not match expected clue count")
+	}
+
+	if p.ExpectedClues() != 0 {
+		t.Fatalf("No clues should be expected in a new puzzle")
+	}
+
+	p.Board[0][0].Value = puz.SOLID_SQUARE
+
+	// adding clues
+	ok := p.AddClue(puz.NewClue("clue 1", 1, 1, 0, puz.Down), false)
+	if !ok {
+		t.Fatalf("Failed to add valid clue 1,0.D")
+	}
+
+	if p.ExpectedClues() != 1 {
+		t.Fatalf("Failed to increase expected clues on clue add")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue 2", 1, 1, 0, puz.Across), false)
+	if !ok {
+		t.Fatalf("Failed to add valid clue 1,0.A")
+	}
+
+	if p.ExpectedClues() != 2 {
+		t.Fatalf("Failed to increase expected clues on clue add")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue -1", 1, 1, 0, puz.Across), false)
+	if ok {
+		t.Fatalf("Allowed placing a repeat clue 1,0.A")
+	}
+
+	if p.ExpectedClues() != 2 {
+		t.Fatalf("Made change to expected clue count despite not allowing placement")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue -1", 2, 1, 0, puz.Across), false)
+	if ok {
+		t.Fatalf("Allowed adding a clue at a position with a repeat number")
+	}
+
+	if p.ExpectedClues() != 2 {
+		t.Fatalf("Made change to expected clue count despite not allowing placement")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue 3", 2, 2, 2, puz.Across), false)
+	if !ok {
+		t.Fatalf("Prevented placing valid clue at invalid position when not validating")
+	}
+
+	if p.ExpectedClues() != 3 {
+		t.Fatalf("Failed to increase expected clues on clue add")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue -1", 2, 2, 2, puz.Down), true)
+	if ok {
+		t.Fatalf("Failed to prevent placing valid clue at invalid position when validating")
+	}
+
+	if p.ExpectedClues() != 3 {
+		t.Fatalf("Made change to expected clue count despite not allowing placement")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue 4", 3, 0, 1, puz.Down), true)
+	if !ok {
+		t.Fatalf("Prevented placing valid clue at valid position when validating")
+	}
+
+	if p.ExpectedClues() != 4 {
+		t.Fatalf("Failed to increase expected clues on clue add")
+	}
+
+	ok = p.AddClue(puz.NewClue("clue -1", 4, 0, 4, puz.Down), true)
+	if ok {
+		t.Fatalf("Failed to prevent placing valid clue at valid position with invalid direction when validating")
+	}
+
+	if p.ExpectedClues() != 4 {
+		t.Fatalf("Made change to expected clue count despite not allowing placement")
+	}
+
+	// removing clues
 }
