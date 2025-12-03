@@ -4,9 +4,9 @@ A PUZ file decoder and encoder based on the format specified [here](https://code
 
 ## Features
 
-- Encodes and Decodes .PUZ Files
+- Encodes and Decodes PUZ Files
 - Supports Extra Sections
-- Unscrambles and Re-scrambles .PUZ files
+- Unscrambles and Re-scrambles PUZ files
 - Preserves all data
 
 ## TODO
