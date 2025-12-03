@@ -200,4 +200,22 @@ func TestAddingAndRemovingClues(t *testing.T) {
 	}
 
 	// removing clues
+	p.RemoveClueByNum(4, puz.Down)
+	if p.ExpectedClues() != 4 {
+		t.Fatalf("Decreased expected clues when no clue was removed")
+	}
+
+	p.RemoveClueByNum(1, puz.Across)
+	if p.ExpectedClues() != 3 {
+		t.Fatalf("Failed to decrease expected clues when a clue was removed")
+	}
+
+	p.RemoveClueByPos(1, 0, puz.Down)
+	if p.ExpectedClues() != 2 {
+		t.Fatalf("Failed to decrease expected clues when a clue was removed")
+	}
+
+	if len(p.Clues()) != p.ExpectedClues() {
+		t.Fatalf("Actual clues and expected clues became out of sync")
+	}
 }
