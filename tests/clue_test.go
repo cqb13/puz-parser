@@ -25,20 +25,6 @@ func TestClueLoading(t *testing.T) {
 	}
 }
 
-/*
-Expected clues for this crossword
-
-1.A: Lowest vocal range
-1.D: Shell used for Unix commands
-2.D: Person playing a role
-3.D: Seaside land
-4.D: Smell, touch, e.g.
-5.A: Felt dull pain
-6.D: A legal document that transfers ownership of property from one person to another
-7.A: A pebble is a small one
-8.A: A pony is a small one
-9.A: A plant used for thatching
-*/
 func TestGettingClues(t *testing.T) {
 	name := "Crossword.puz"
 	data, err := loadFile(name)
