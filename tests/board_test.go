@@ -94,3 +94,72 @@ func TestWordStartDetection(t *testing.T) {
 		t.Fatalf("Detected the start of a 1 letter long down word")
 	}
 }
+
+func TestGettingWords(t *testing.T) {
+	name := "Crossword.puz"
+	data, err := loadFile(name)
+	if err != nil {
+		t.Fatalf("Failed to load %s: %v", name, err)
+	}
+
+	puzzle, err := puz.DecodePuz(data)
+	if err != nil {
+		t.Fatalf("Failed to decode %s: %v", name, err)
+	}
+
+	board := puzzle.Board
+
+	// ensure the right amount of words are found with the correct directions
+	words := board.GetWords()
+	if len(words) != 10 {
+		t.Fatalf("Failed to find expected amount of words in %s, expected 10, found %d", name, len(words))
+	}
+
+	acrossWords := 0
+	for _, word := range words {
+		if word.Direction == puz.Across {
+			acrossWords++
+		}
+	}
+
+	if acrossWords != 5 {
+		t.Fatalf("Failed to properly determine the directions of all words in %s, expected 5 across words, found %d", name, acrossWords)
+	}
+
+	// ensure the words can be retrieved from the board
+	word, ok := board.GetWord(0, 0, puz.Across)
+	if !ok {
+		t.Fatalf("Failed to retrieve word from valid position 0,0.A")
+	}
+
+	if word != "BASS" {
+		t.Fatalf("Failed to retrieve correct word from 0,0.A, expected BASS, found %s", word)
+	}
+
+	word, ok = board.GetWord(0, 0, puz.Down)
+	if !ok {
+		t.Fatalf("Failed to retrieve word from valid position 0,0.D")
+	}
+
+	if word != "BASH" {
+		t.Fatalf("Failed to retrieve correct word from 0,0.D, expected BASH, found %s", word)
+	}
+
+	word, ok = board.GetWord(1, 4, puz.Across)
+	if !ok {
+		t.Fatalf("Failed to retrieve word from valid position 1,4.A")
+	}
+
+	if word != "REED" {
+		t.Fatalf("Failed to retrieve correct word from 1,4.A, expected REED, found %s", word)
+	}
+
+	word, ok = board.GetWord(4, 1, puz.Down)
+	if !ok {
+		t.Fatalf("Failed to retrieve word from valid position 4,1.D")
+	}
+
+	if word != "DEED" {
+		t.Fatalf("Failed to retrieve correct word from 4,1.D, expected DEED, found %s", word)
+	}
+}
