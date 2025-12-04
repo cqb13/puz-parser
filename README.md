@@ -11,7 +11,6 @@ A PUZ file decoder and encoder based on the format specified [here](https://code
 
 ## TODO
 
-- Tests for puzzle loading (ensure proper name, description, copyright, version, etc...)
 - Init puzzle from board
 - Test scrambling a puzzle with non letter chars
 - Better errors
