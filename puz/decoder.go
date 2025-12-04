@@ -254,7 +254,7 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 
 	for y := range height {
 		for x := range width {
-			if puzzle.Board.IsBlackSquare(x, y) {
+			if puzzle.Board.IsSolidSquare(x, y) {
 				continue
 			}
 

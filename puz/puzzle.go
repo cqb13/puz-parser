@@ -318,7 +318,7 @@ func (b Board) inBounds(x int, y int) bool {
 	return false
 }
 
-func (b Board) IsBlackSquare(x int, y int) bool {
+func (b Board) IsSolidSquare(x int, y int) bool {
 	return b[y][x].Value == SOLID_SQUARE || b[y][x].Value == DIAGRAMLESS_SOLID_SQUARE
 }
 
@@ -327,7 +327,7 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 		return "", false
 	}
 
-	if b.IsBlackSquare(x, y) {
+	if b.IsSolidSquare(x, y) {
 		return "", false
 	}
 
@@ -345,7 +345,7 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 			yOffset += 1
 		}
 
-		if !b.inBounds(xOffset, yOffset) || b.IsBlackSquare(xOffset, yOffset) {
+		if !b.inBounds(xOffset, yOffset) || b.IsSolidSquare(xOffset, yOffset) {
 			break
 		}
 	}
@@ -358,8 +358,12 @@ func (b Board) StartsAcrossWord(x int, y int) bool {
 		return false
 	}
 
-	if x == 0 || b.IsBlackSquare(x-1, y) {
-		if x+1 < b.Width() && !b.IsBlackSquare(x+1, y) {
+	if b.IsSolidSquare(x, y) {
+		return false
+	}
+
+	if x == 0 || b.IsSolidSquare(x-1, y) {
+		if x+1 < b.Width() && !b.IsSolidSquare(x+1, y) {
 			return true
 		}
 	}
@@ -372,8 +376,12 @@ func (b Board) StartsDownWord(x int, y int) bool {
 		return false
 	}
 
-	if y == 0 || b.IsBlackSquare(x, y-1) {
-		if y+1 < b.Height() && !b.IsBlackSquare(x, y+1) {
+	if b.IsSolidSquare(x, y) {
+		return false
+	}
+
+	if y == 0 || b.IsSolidSquare(x, y-1) {
+		if y+1 < b.Height() && !b.IsSolidSquare(x, y+1) {
 			return true
 		}
 	}
@@ -388,7 +396,7 @@ func (b Board) GetWords() []Word {
 	nextWordNum := 1
 	for y := range b.Height() {
 		for x := range width {
-			if b.IsBlackSquare(x, y) {
+			if b.IsSolidSquare(x, y) {
 				continue
 			}
 
