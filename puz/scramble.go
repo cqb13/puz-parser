@@ -13,7 +13,7 @@ func isLetter(char byte) bool {
 	return false
 }
 
-func createScramble(puzzle *Puzzle) string {
+func createScramble(puzzle *Puzzle) (string, error) {
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()
 	scramble := ""
@@ -23,11 +23,16 @@ func createScramble(puzzle *Puzzle) string {
 			ch := puzzle.Board[y][x].Value
 			if isLetter(ch) {
 				scramble += string(ch)
+				continue
+			}
+
+			if ch != SOLID_SQUARE && ch != DIAGRAMLESS_SOLID_SQUARE {
+				return "", ErrNonLetterCharactersInScramble
 			}
 		}
 	}
 
-	return scramble
+	return scramble, nil
 }
 
 func updatePuzzleSolution(puzzle *Puzzle, newSol string) {
@@ -68,7 +73,10 @@ func scramble(puzzle *Puzzle, key int) error {
 		return err
 	}
 
-	scramble := createScramble(puzzle)
+	scramble, err := createScramble(puzzle)
+	if err != nil {
+		return err
+	}
 
 	if len(scramble) < 12 {
 		return ErrTooFewCharactersToScramble
@@ -128,7 +136,11 @@ func unscramble(puzzle *Puzzle, key int) error {
 		return err
 	}
 
-	solution := createScramble(puzzle)
+	solution, err := createScramble(puzzle)
+	if err != nil {
+		return err
+	}
+
 	if len(solution) < 12 {
 		return ErrTooFewCharactersToUnscramble
 	}
@@ -186,4 +198,3 @@ func unshiftString(s string, num int) string {
 	num = num % len(s)
 	return s[len(s)-num:] + s[:len(s)-num]
 }
-
