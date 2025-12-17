@@ -1,5 +1,7 @@
 package puz
 
+import "strings"
+
 type Board [][]Cell
 
 type Word struct {
@@ -10,6 +12,7 @@ type Word struct {
 	Direction Direction
 }
 
+// TODO: make it more clear what the difference and state is, prob change name
 type Cell struct {
 	Value    byte
 	State    byte
@@ -95,13 +98,13 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 		return "", false
 	}
 
-	word := ""
+	var word strings.Builder
 
 	xOffset := x
 	yOffset := y
 
 	for {
-		word += string(b[yOffset][xOffset].Value)
+		word.WriteString(string(b[yOffset][xOffset].Value))
 
 		if dir == Across {
 			xOffset += 1
@@ -114,7 +117,7 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 		}
 	}
 
-	return word, true
+	return word.String(), true
 }
 
 func (b Board) StartsAcrossWord(x int, y int) bool {

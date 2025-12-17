@@ -290,7 +290,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		return ErrUknownExtraSectionName
 	}
 
-	section, ok := GetSectionFromString(string(sectionName))
+	section, ok := getSectionFromString(string(sectionName))
 	if !ok {
 		return ErrUknownExtraSectionName
 	}

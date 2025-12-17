@@ -2,6 +2,7 @@ package puz
 
 import (
 	"fmt"
+	"strings"
 )
 
 // a-z and A-Z
@@ -16,13 +17,13 @@ func isLetter(char byte) bool {
 func createScramble(puzzle *Puzzle) (string, error) {
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()
-	scramble := ""
+	var scramble strings.Builder
 
 	for x := range width {
 		for y := range height {
 			ch := puzzle.Board[y][x].Value
 			if isLetter(ch) {
-				scramble += string(ch)
+				scramble.WriteString(string(ch))
 				continue
 			}
 
@@ -32,7 +33,7 @@ func createScramble(puzzle *Puzzle) (string, error) {
 		}
 	}
 
-	return scramble, nil
+	return scramble.String(), nil
 }
 
 func updatePuzzleSolution(puzzle *Puzzle, newSol string) {
@@ -117,17 +118,17 @@ func scrambleString(unscrambled string) string {
 	front := unscrambled[:mid]
 	back := unscrambled[mid:]
 
-	scrambled := ""
+	var scrambled strings.Builder
 
 	for i := range len(front) {
-		scrambled += string(back[i]) + string(front[i])
+		scrambled.WriteString(string(back[i]) + string(front[i]))
 	}
 
 	if len(unscrambled)%2 != 0 {
-		scrambled += string(back[len(back)-1])
+		scrambled.WriteString(string(back[len(back)-1]))
 	}
 
-	return scrambled
+	return scrambled.String()
 }
 
 func unscramble(puzzle *Puzzle, key int) error {
