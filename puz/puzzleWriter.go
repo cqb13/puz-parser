@@ -54,7 +54,7 @@ func (w *puzzleWriter) OverWrite(offset int, newBytes []byte) error {
 	data := w.buffer.Bytes()
 
 	if offset < 0 || offset > len(data) || offset+len(newBytes) > len(data) {
-		return ErrOutOfBoundsWrite
+		return OutOfBoundsWriteError
 	}
 
 	copy(data[offset:], newBytes)

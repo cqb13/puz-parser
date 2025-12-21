@@ -95,7 +95,10 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 	if len(puzzle.clues) != int(puzzle.expectedClues) {
-		return ErrClueCountMismatch
+		return &ClueCountMismatchError{
+			int(puzzle.expectedClues),
+			len(puzzle.clues),
+		}
 	}
 
 	writer.WriteString(puzzle.Title)
@@ -115,7 +118,6 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 
 		switch section {
 		case RebusSection, MarkupBoardSection:
-
 			height := puzzle.Board.Height()
 			width := puzzle.Board.Width()
 			size := height * width
@@ -139,7 +141,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 			data = board
 		case RebusTableSection:
 			if puzzle.Extras.RebusTable == nil {
-				return ErrMissingExtraSection
+				return MissingExtraSectionError
 			}
 
 			for _, entry := range puzzle.Extras.RebusTable {
@@ -159,7 +161,7 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 			data = fmt.Appendf(data, "%d,%d", puzzle.Extras.Timer.SecondsPassed, runningRep)
 		case UserRebusTableSection:
 			if puzzle.Extras.UserRebusTable == nil {
-				return ErrMissingExtraSection
+				return MissingExtraSectionError
 			}
 
 			for _, entry := range puzzle.Extras.UserRebusTable {

@@ -23,7 +23,7 @@ func (r *puzzleReader) CanRead(amount int) bool {
 
 func (r *puzzleReader) Read(amount int) ([]byte, error) {
 	if !r.CanRead(amount) {
-		return nil, ErrOutOfBoundsRead
+		return nil, OutOfBoundsReadError
 	}
 
 	start := r.offset
@@ -33,7 +33,7 @@ func (r *puzzleReader) Read(amount int) ([]byte, error) {
 
 func (r *puzzleReader) Peek(amount int) ([]byte, error) {
 	if !r.CanRead(amount) {
-		return nil, ErrOutOfBoundsRead
+		return nil, OutOfBoundsReadError
 	}
 
 	start := r.offset

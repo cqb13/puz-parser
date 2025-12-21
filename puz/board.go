@@ -46,7 +46,7 @@ func NewBoardFromArr(byteBoard [][]byte) ([][]Cell, error) {
 	for y, row := range byteBoard {
 		board[y] = make([]Cell, len(row))
 		if len(row) != prevWdith {
-			return nil, ErrBoardWidthMismatch
+			return nil, BoardWidthMismatchError
 		}
 		for x, value := range row {
 			cell := Cell{

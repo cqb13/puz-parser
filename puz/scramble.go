@@ -28,7 +28,7 @@ func createScramble(puzzle *Puzzle) (string, error) {
 			}
 
 			if ch != SOLID_SQUARE && ch != DIAGRAMLESS_SOLID_SQUARE {
-				return "", ErrNonLetterCharactersInScramble
+				return "", NonLetterCharactersInScrambleError
 			}
 		}
 	}
@@ -53,14 +53,14 @@ func updatePuzzleSolution(puzzle *Puzzle, newSol string) {
 
 func keyToBytes(key int) ([]byte, error) {
 	if key < 1000 || key > 9999 {
-		return nil, ErrInvalidKeyLength
+		return nil, InvalidKeyLengthError
 	}
 
 	keyBytes := fmt.Appendf(nil, "%04d", key)
 
 	for i := range keyBytes {
 		if keyBytes[i] == '0' {
-			return nil, ErrInvalidDigitInKey
+			return nil, InvalidDigitInKeyError
 		}
 		keyBytes[i] -= '0'
 	}
@@ -80,7 +80,7 @@ func scramble(puzzle *Puzzle, key int) error {
 	}
 
 	if len(scramble) < 12 {
-		return ErrTooFewCharactersToScramble
+		return TooFewCharactersToScrambleError
 	}
 
 	for _, digit := range keyDigits {
@@ -143,7 +143,7 @@ func unscramble(puzzle *Puzzle, key int) error {
 	}
 
 	if len(solution) < 12 {
-		return ErrTooFewCharactersToUnscramble
+		return TooFewCharactersToUnscrambleError
 	}
 
 	for round := 3; round >= 0; round-- {
@@ -152,19 +152,19 @@ func unscramble(puzzle *Puzzle, key int) error {
 		solution = unscrambleString(solution)
 		solution = unshiftString(solution, digit)
 
-		undo := ""
+		var undo strings.Builder
 		for i, ch := range solution {
 			letter := byte(ch) - keyDigits[i%4]
 			if letter < 'A' {
 				letter += 26
 			}
-			undo += string(letter)
+			undo.WriteString(string(letter))
 		}
-		solution = undo
+		solution = undo.String()
 	}
 
 	if checksumRegion([]byte(solution), 0) != puzzle.scramble.scrambledChecksum {
-		return ErrIncorrectKeyProvided
+		return IncorrectKeyProvidedError
 	}
 
 	updatePuzzleSolution(puzzle, solution)

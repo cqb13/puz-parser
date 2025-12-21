@@ -11,7 +11,6 @@ A PUZ file decoder and encoder based on the format specified [here](https://code
 
 ## TODO
 
-- Better errors
 - Docs
 
 ## Installation

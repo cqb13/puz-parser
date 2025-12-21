@@ -1,6 +1,7 @@
 package puz
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"slices"
@@ -16,7 +17,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	fileMagicIndex := reader.Index([]byte(file_magic))
 	if fileMagicIndex == -1 {
-		return nil, ErrMissingFileMagic
+		return nil, MissingFileMagicError
 	}
 	preamble, err := reader.Read(fileMagicIndex - 2)
 	puzzle.UnusedData.Preamble = preamble
@@ -38,7 +39,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	for range 5 {
 		err = parseExtraSection(&reader, &puzzle)
-		if errors.Is(err, ErrUknownExtraSectionName) {
+		if errors.Is(err, UknownExtraSectionNameError) {
 			break
 		}
 
@@ -55,19 +56,35 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes, puzzle.version)
 
 	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
-		return nil, ErrCIBChecksumMismatch
+		return nil, &ChecksumMismatchError{
+			int(foundChecksums.cibChecksum),
+			int(computedChecksums.cibChecksum),
+			cibChecksum,
+		}
 	}
 
 	if foundChecksums.checksum != computedChecksums.checksum {
-		return nil, ErrGlobalChecksumMismatch
+		return nil, &ChecksumMismatchError{
+			int(foundChecksums.checksum),
+			int(computedChecksums.checksum),
+			globalChecksum,
+		}
 	}
 
 	if foundChecksums.maskedLowChecksum != computedChecksums.maskedLowChecksum {
-		return nil, ErrMaskedLowChecksumMismatch
+		return nil, &ChecksumMismatchError{
+			int(binary.LittleEndian.Uint32(foundChecksums.maskedLowChecksum[:])),
+			int(binary.LittleEndian.Uint32(computedChecksums.maskedLowChecksum[:])),
+			maskedLowChecksum,
+		}
 	}
 
 	if foundChecksums.maskedHighChecksum != computedChecksums.maskedHighChecksum {
-		return nil, ErrMaskedHighChecksumMismatch
+		return nil, &ChecksumMismatchError{
+			int(binary.LittleEndian.Uint32(foundChecksums.maskedHighChecksum[:])),
+			int(binary.LittleEndian.Uint32(computedChecksums.maskedHighChecksum[:])),
+			maskedHighChecksum,
+		}
 	}
 
 	return &puzzle, nil
@@ -75,7 +92,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if reader.Len() < 52 {
-		return nil, ErrUnreadableData
+		return nil, UnreadableDataError
 	}
 
 	checksum, err := reader.ReadShort()
@@ -84,7 +101,7 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	}
 	fileMagic := reader.ReadStr()
 	if string(fileMagic) != file_magic {
-		return nil, ErrMissingFileMagic
+		return nil, MissingFileMagicError
 	}
 
 	cibChecksum, err := reader.ReadShort()
@@ -178,7 +195,7 @@ func parseSolutionAndState(reader *puzzleReader, puzzle *Puzzle) error {
 	expectedLen := reader.offset + size*2
 
 	if expectedLen > reader.Len() {
-		return ErrUnreadableData
+		return UnreadableDataError
 	}
 
 	solution, err := parseBoard(reader, width, height)
@@ -232,7 +249,10 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 	}
 
 	if len(clues) != int(puzzle.expectedClues) {
-		return ErrClueCountMismatch
+		return &ClueCountMismatchError{
+			int(puzzle.expectedClues),
+			len(clues),
+		}
 	}
 
 	puzzle.clues = make([]Clue, puzzle.expectedClues)
@@ -287,12 +307,12 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	sectionName, err := reader.Peek(4)
 	if err != nil {
-		return ErrUknownExtraSectionName
+		return UknownExtraSectionNameError
 	}
 
 	section, ok := getSectionFromString(string(sectionName))
 	if !ok {
-		return ErrUknownExtraSectionName
+		return UknownExtraSectionNameError
 	}
 
 	// just for shifting offset on valid section name
@@ -314,11 +334,17 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 	computedChecksum := checksumRegion(data, 0x00)
 
 	if checksum != computedChecksum {
-		return ErrExtraSectionChecksumMismatch
+		return &ExtraSectionChecksumMismatchError{
+			checksum,
+			computedChecksum,
+			section,
+		}
 	}
 
 	if slices.Contains(puzzle.Extras.extraSectionOrder, section) {
-		return ErrDuplicateExtraSection
+		return &DuplicateExtraSectionError{
+			section,
+		}
 	}
 
 	puzzle.Extras.extraSectionOrder = append(puzzle.Extras.extraSectionOrder, section)
@@ -370,7 +396,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		puzzle.Extras.UserRebusTable = tbl
 
 	default:
-		return ErrUknownExtraSectionName
+		return UknownExtraSectionNameError
 	}
 
 	// skip null terminator at the end of a section
@@ -382,7 +408,7 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 func parseExtraSectionBoard(bytes []byte, width int, height int) ([][]byte, error) {
 	size := width * height
 	if len(bytes) != size {
-		return nil, ErrUnreadableData
+		return nil, UnreadableDataError
 	}
 
 	var board [][]byte
@@ -405,7 +431,7 @@ func parseExtraSectionRebusTbl(bytes []byte) ([]RebusEntry, error) {
 	for _, part := range parts {
 		data := strings.Split(part, ":")
 		if len(data) != 2 {
-			return nil, ErrUnreadableData
+			return nil, UnreadableDataError
 		}
 
 		rawKey := data[0]
@@ -431,11 +457,11 @@ func parseExtraTimerSection(bytes []byte) (*TimerData, error) {
 
 	parts := strings.Split(str, ",")
 	if len(parts) != 2 {
-		return nil, ErrUnreadableData
+		return nil, UnreadableDataError
 	}
 
 	if len(parts[1]) != 1 {
-		return nil, ErrUnreadableData
+		return nil, UnreadableDataError
 	}
 
 	running := true

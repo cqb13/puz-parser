@@ -134,7 +134,7 @@ func (p *Puzzle) SetVersion(version string) error {
 	bytes := []byte(version)
 
 	if len(version) != 3 || bytes[1] != '.' {
-		return ErrInvalidVersionFormat
+		return InvalidVersionFormatError
 	}
 
 	p.version = version + "\x00"
@@ -287,7 +287,7 @@ func (p *Puzzle) Scrambled() bool {
 // the key is incorrect, the board has non ASCII letters (a-z / A-Z), or the board has less than 12 valid letters.
 func (p *Puzzle) Unscramble(key int) error {
 	if !p.Scrambled() {
-		return ErrPuzzleIsUnscrambled
+		return PuzzleIsUnscrambledError
 	}
 
 	err := unscramble(p, key)
@@ -304,7 +304,7 @@ func (p *Puzzle) Unscramble(key int) error {
 // the board has non ASCII letters (a-z / A-Z), or the board has less than 12 valid letters.
 func (p *Puzzle) Scramble(key int) error {
 	if p.Scrambled() {
-		return ErrPuzzleIsScrambled
+		return PuzzleIsScrambledError
 	}
 
 	err := scramble(p, key)
