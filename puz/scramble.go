@@ -14,6 +14,9 @@ func isLetter(char byte) bool {
 	return false
 }
 
+// createScramble converts a puzzles board into a string used in the scrambling/unscrambling algorithm
+// TODO: explain process
+// TODO: Explain error
 func createScramble(puzzle *Puzzle) (string, error) {
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()

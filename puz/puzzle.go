@@ -177,6 +177,19 @@ func (p *Puzzle) GetClueByNum(num int, dir Direction) (*Clue, bool) {
 	return nil, false
 }
 
+// GetCluesByDirection retrieves all clues with a direction
+func (p *Puzzle) GetCluesByDirection(dir Direction) Clues {
+	var clues Clues
+
+	for _, clue := range p.clues {
+		if clue.Direction == dir {
+			clues = append(clues, clue)
+		}
+	}
+
+	return clues
+}
+
 // AddClue takes in a clue and adds it to the clue list, then sorts the clues.
 // If validateBoardPos is true, a check will be performed to ensure that the position of the clue is the start of a word on the board.
 // Returns ok if the clue with the same position and direction does not already exist and if the clue passes validation checks.
