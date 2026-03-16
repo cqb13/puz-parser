@@ -12,10 +12,9 @@ type Word struct {
 	Direction Direction
 }
 
-// TODO: make it more clear what the difference and state is, prob change name
 type Cell struct {
-	Value    byte
-	State    byte
+	Answer   byte
+	Guess    byte
 	RebusKey byte
 	Markup   byte
 }
@@ -57,10 +56,10 @@ func NewBoardFromArr(byteBoard [][]byte) ([][]Cell, error) {
 			}
 
 			if value == SOLID_SQUARE || value == DIAGRAMLESS_SOLID_SQUARE {
-				cell.State = value
+				cell.Guess = value
 			}
 
-			cell.Value = value
+			cell.Answer = value
 
 			board[y][x] = cell
 		}
@@ -86,7 +85,7 @@ func (b Board) inBounds(x int, y int) bool {
 }
 
 func (b Board) IsSolidSquare(x int, y int) bool {
-	return b[y][x].Value == SOLID_SQUARE || b[y][x].Value == DIAGRAMLESS_SOLID_SQUARE
+	return b[y][x].Answer == SOLID_SQUARE || b[y][x].Answer == DIAGRAMLESS_SOLID_SQUARE
 }
 
 func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
@@ -104,7 +103,7 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	yOffset := y
 
 	for {
-		word.WriteString(string(b[yOffset][xOffset].Value))
+		word.WriteString(string(b[yOffset][xOffset].Answer))
 
 		if dir == Across {
 			xOffset += 1

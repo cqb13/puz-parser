@@ -84,8 +84,8 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
 
 	for y := range height {
 		for x := range width {
-			solution[(y*width)+x] = puzzle.Board[y][x].Value
-			state[(y*width)+x] = puzzle.Board[y][x].State
+			solution[(y*width)+x] = puzzle.Board[y][x].Answer
+			state[(y*width)+x] = puzzle.Board[y][x].Guess
 		}
 	}
 

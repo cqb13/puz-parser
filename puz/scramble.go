@@ -24,7 +24,7 @@ func createScramble(puzzle *Puzzle) (string, error) {
 
 	for x := range width {
 		for y := range height {
-			ch := puzzle.Board[y][x].Value
+			ch := puzzle.Board[y][x].Answer
 			if isLetter(ch) {
 				scramble.WriteString(string(ch))
 				continue
@@ -46,8 +46,8 @@ func updatePuzzleSolution(puzzle *Puzzle, newSol string) {
 
 	for x := range width {
 		for y := range height {
-			if isLetter(puzzle.Board[y][x].Value) {
-				puzzle.Board[y][x].Value = newSol[n]
+			if isLetter(puzzle.Board[y][x].Answer) {
+				puzzle.Board[y][x].Answer = newSol[n]
 				n++
 			}
 		}

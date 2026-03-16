@@ -210,8 +210,8 @@ func parseSolutionAndState(reader *puzzleReader, puzzle *Puzzle) error {
 
 	for y := range height {
 		for x := range width {
-			puzzle.Board[y][x].Value = solution[y][x]
-			puzzle.Board[y][x].State = state[y][x]
+			puzzle.Board[y][x].Answer = solution[y][x]
+			puzzle.Board[y][x].Guess = state[y][x]
 		}
 	}
 
