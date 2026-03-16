@@ -9,8 +9,8 @@ import (
 func TestSolidSquareDetection(t *testing.T) {
 	var board puz.Board = puz.NewBoard(5, 5)
 
-	board[0][0].Value = puz.SOLID_SQUARE
-	board[0][1].Value = puz.DIAGRAMLESS_SOLID_SQUARE
+	board[0][0].Answer = puz.SOLID_SQUARE
+	board[0][1].Answer = puz.DIAGRAMLESS_SOLID_SQUARE
 
 	if !board.IsSolidSquare(0, 0) {
 		t.Fatalf("Failed to detect solid square")
@@ -24,7 +24,7 @@ func TestSolidSquareDetection(t *testing.T) {
 func TestWordStartDetection(t *testing.T) {
 	var board puz.Board = puz.NewBoard(5, 5)
 
-	board[0][0].Value = puz.SOLID_SQUARE
+	board[0][0].Answer = puz.SOLID_SQUARE
 
 	// make sure words cant start in solid squares
 	if board.StartsAcrossWord(0, 0) {
@@ -72,7 +72,7 @@ func TestWordStartDetection(t *testing.T) {
 	}
 
 	// make sure 2 letters long works
-	board[2][2].Value = puz.SOLID_SQUARE
+	board[2][2].Answer = puz.SOLID_SQUARE
 
 	if !board.StartsAcrossWord(0, 2) {
 		t.Fatalf("Failed to detect the start of a 2 letter long across word")
@@ -83,8 +83,8 @@ func TestWordStartDetection(t *testing.T) {
 	}
 
 	// make sure 1 letter long words fail
-	board[2][1].Value = puz.SOLID_SQUARE
-	board[4][2].Value = puz.SOLID_SQUARE
+	board[2][1].Answer = puz.SOLID_SQUARE
+	board[4][2].Answer = puz.SOLID_SQUARE
 
 	if board.StartsAcrossWord(0, 2) {
 		t.Fatalf("Detected the start of a 1 letter long across word")

@@ -1,25 +1,32 @@
 package puz
 
-import "strings"
+import (
+	"strings"
+)
 
+// A Board represents a crossword grid, it is made up of cells which contain answers, player guesses, and markup information.
 type Board [][]Cell
 
 type Word struct {
-	Word      string
-	Num       int
-	StartX    int
-	StartY    int
-	Direction Direction
+	Word      string    // The word extracted from the grid
+	Num       int       // The calculated number of the word based on grid layout
+	StartX    int       // The x position of the first letter
+	StartY    int       // The y position of the first letter
+	Direction Direction // The direction of the word
 }
 
+// A Cell is a square in a crossword grid
 type Cell struct {
-	Answer   byte
-	Guess    byte
-	RebusKey byte
-	Markup   byte
+	Answer   byte // The answer letter
+	Guess    byte // The letter guessed by the player (used for saving game state)
+	RebusKey byte // Indicates a connection to a value in the rebus table with the same key
+	Markup   byte // Indicates applied markup
 }
 
-func NewBoard(width uint8, height uint8) [][]Cell {
+// NewBoard returns a Board of width x height.
+//
+// Each cells answer is EMPTY_SOLUTION_SQUARE, guess is EMPTY_STATE_SQUARE, no markup or rebus is applied.
+func NewBoard(width uint8, height uint8) Board {
 	board := make([][]Cell, height)
 
 	for y := range height {
@@ -38,7 +45,10 @@ func NewBoard(width uint8, height uint8) [][]Cell {
 	return board
 }
 
-func NewBoardFromArr(byteBoard [][]byte) ([][]Cell, error) {
+// NewBoardFromArr returns a Board with the same dimensions as the provided 2D byte slice. Returns a BoardWidthMismatchError if the rows in byteBoard are not all the same length.
+//
+// A cells answer is set to the corresponding value to the byte board, the guess is EMPTY_STATE_SQUARE unless the answer is a SOLID_SQUARE or DIAGRAMLESS_SOLID_SQUARE in which case the guess will match it, no markup or rebus is applied.
+func NewBoardFromArr(byteBoard [][]byte) (Board, error) {
 	board := make([][]Cell, len(byteBoard))
 
 	prevWdith := len(byteBoard[0])
@@ -68,14 +78,22 @@ func NewBoardFromArr(byteBoard [][]byte) ([][]Cell, error) {
 	return board, nil
 }
 
+// Height returns the number of rows in the board.
 func (b Board) Height() int {
 	return len(b)
 }
 
+// Width returns the number of columns in the board.
 func (b Board) Width() int {
+	if len(b) == 0 {
+		return 0
+	}
+
 	return len(b[0])
 }
 
+// inBounds reports if an (x, y) is within a boards bounds.
+// Valid coordinates satisfy 0 <= x < b.Width() and 0 <= y < b.Height().
 func (b Board) inBounds(x int, y int) bool {
 	if x >= 0 && x < b.Width() && y >= 0 && y < b.Height() {
 		return true
@@ -84,10 +102,18 @@ func (b Board) inBounds(x int, y int) bool {
 	return false
 }
 
+// IsSolidSquare reports if a cell at (x, y) is SOLID_SQUARE or DIAGRAMLESS_SOLID_SQUARE.
 func (b Board) IsSolidSquare(x int, y int) bool {
+	if !b.inBounds(x, y) {
+		return false
+	}
+
 	return b[y][x].Answer == SOLID_SQUARE || b[y][x].Answer == DIAGRAMLESS_SOLID_SQUARE
 }
 
+// GetWord returns the series of letters starting at (x, y) in the given direction. Continues until the edge of the board or until a solid square is hit.
+//
+// The word is only valid if the bool is true.
 func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	if !b.inBounds(x, y) {
 		return "", false
@@ -119,6 +145,9 @@ func (b Board) GetWord(x int, y int, dir Direction) (string, bool) {
 	return word.String(), true
 }
 
+// StartsAcrossWord reports if an across word starts at (x, y).
+//
+// A word must either have the board edge or a solid square to its left and have at least 2 letters.
 func (b Board) StartsAcrossWord(x int, y int) bool {
 	if !b.inBounds(x, y) {
 		return false
@@ -137,6 +166,9 @@ func (b Board) StartsAcrossWord(x int, y int) bool {
 	return false
 }
 
+// StartsAcrossWord reports if a down word starts at (x, y).
+//
+// A word must either have the board edge or a solid square above it and have at least 2 letters.
 func (b Board) StartsDownWord(x int, y int) bool {
 	if !b.inBounds(x, y) {
 		return false
@@ -155,6 +187,7 @@ func (b Board) StartsDownWord(x int, y int) bool {
 	return false
 }
 
+// GetWords returns a list of Words from the board.
 func (b Board) GetWords() []Word {
 	var words []Word
 
