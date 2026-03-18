@@ -25,7 +25,7 @@ type Cell struct {
 
 // NewBoard returns a Board of width x height.
 //
-// Each cells answer is EMPTY_SOLUTION_SQUARE, guess is EMPTY_STATE_SQUARE, no markup or rebus is applied.
+// Each cells answer is EmptySolutionSquare, guess is EmptyStateSquare, no markup or rebus is applied.
 func NewBoard(width uint8, height uint8) Board {
 	board := make([][]Cell, height)
 
@@ -34,8 +34,8 @@ func NewBoard(width uint8, height uint8) Board {
 
 		for x := range width {
 			board[y][x] = Cell{
-				EMPTY_SOLUTION_SQUARE,
-				EMPTY_STATE_SQUARE,
+				EmptySolutionSquare,
+				EmptyStateSquare,
 				0x00,
 				0x00,
 			}
@@ -47,7 +47,7 @@ func NewBoard(width uint8, height uint8) Board {
 
 // NewBoardFromArr returns a Board with the same dimensions as the provided 2D byte slice. Returns a BoardWidthMismatchError if the rows in byteBoard are not all the same length.
 //
-// A cells answer is set to the corresponding value to the byte board, the guess is EMPTY_STATE_SQUARE unless the answer is a SOLID_SQUARE or DIAGRAMLESS_SOLID_SQUARE in which case the guess will match it, no markup or rebus is applied.
+// A cells answer is set to the corresponding value to the byte board, the guess is EmptyStateSquare unless the answer is a SOLID_SQUARE or DiagramlessSolidSquare in which case the guess will match it, no markup or rebus is applied.
 func NewBoardFromArr(byteBoard [][]byte) (Board, error) {
 	board := make([][]Cell, len(byteBoard))
 
@@ -59,13 +59,13 @@ func NewBoardFromArr(byteBoard [][]byte) (Board, error) {
 		}
 		for x, value := range row {
 			cell := Cell{
-				EMPTY_SOLUTION_SQUARE,
-				EMPTY_STATE_SQUARE,
+				EmptySolutionSquare,
+				EmptyStateSquare,
 				0x00,
 				0x00,
 			}
 
-			if value == SOLID_SQUARE || value == DIAGRAMLESS_SOLID_SQUARE {
+			if value == SolidSquare || value == DiagramlessSolidSquare {
 				cell.Guess = value
 			}
 
@@ -102,13 +102,13 @@ func (b Board) inBounds(x int, y int) bool {
 	return false
 }
 
-// IsSolidSquare reports if a cell at (x, y) is SOLID_SQUARE or DIAGRAMLESS_SOLID_SQUARE.
+// IsSolidSquare reports if a cell at (x, y) is SOLID_SQUARE or DiagramlessSolidSquare.
 func (b Board) IsSolidSquare(x int, y int) bool {
 	if !b.inBounds(x, y) {
 		return false
 	}
 
-	return b[y][x].Answer == SOLID_SQUARE || b[y][x].Answer == DIAGRAMLESS_SOLID_SQUARE
+	return b[y][x].Answer == SolidSquare || b[y][x].Answer == DiagramlessSolidSquare
 }
 
 // GetWord returns the series of letters starting at (x, y) in the given direction. Continues until the edge of the board or until a solid square is hit.

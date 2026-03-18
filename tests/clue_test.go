@@ -124,7 +124,7 @@ func TestAddingAndRemovingClues(t *testing.T) {
 		t.Fatalf("No clues should be expected in a new puzzle")
 	}
 
-	p.Board[0][0].Answer = puz.SOLID_SQUARE
+	p.Board[0][0].Answer = puz.SolidSquare
 
 	// adding clues
 	ok := p.AddClue(puz.NewClue("clue 1", 1, 1, 0, puz.Down), false)

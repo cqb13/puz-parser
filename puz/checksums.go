@@ -1,5 +1,6 @@
 package puz
 
+// TODO: doc this
 type checksums struct {
 	checksum           uint16
 	cibChecksum        uint16

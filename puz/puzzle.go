@@ -5,13 +5,12 @@ import (
 	"slices"
 )
 
-// TODO: make name formatting consistent
-const file_magic string = "ACROSS&DOWN"
-const default_version string = "1.4\x00"
-const SOLID_SQUARE byte = '.'
-const DIAGRAMLESS_SOLID_SQUARE byte = ':'
-const EMPTY_STATE_SQUARE byte = '-'
-const EMPTY_SOLUTION_SQUARE byte = ' '
+const fileMagic string = "ACROSS&DOWN"
+const defaultVersion string = "1.4\x00"
+const SolidSquare byte = '.'
+const DiagramlessSolidSquare byte = ':'
+const EmptyStateSquare byte = '-'
+const EmptySolutionSquare byte = ' '
 
 type PuzzleType uint16
 
@@ -101,7 +100,7 @@ func NewPuzzleFromBoard(board Board) *Puzzle {
 		"",
 		"",
 		"",
-		default_version,
+		defaultVersion,
 		board,
 		0,
 		make([]Clue, 0),

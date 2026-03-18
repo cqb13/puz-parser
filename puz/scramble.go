@@ -30,7 +30,7 @@ func createScramble(puzzle *Puzzle) (string, error) {
 				continue
 			}
 
-			if ch != SOLID_SQUARE && ch != DIAGRAMLESS_SOLID_SQUARE {
+			if ch != SolidSquare && ch != DiagramlessSolidSquare {
 				return "", NonLetterCharactersInScrambleError
 			}
 		}

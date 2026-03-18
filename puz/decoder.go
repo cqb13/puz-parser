@@ -15,7 +15,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	reader := newPuzzleReader(bytes)
 
-	fileMagicIndex := reader.Index([]byte(file_magic))
+	fileMagicIndex := reader.Index([]byte(fileMagic))
 	if fileMagicIndex == -1 {
 		return nil, MissingFileMagicError
 	}
@@ -99,8 +99,8 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 	if err != nil {
 		return nil, err
 	}
-	fileMagic := reader.ReadStr()
-	if string(fileMagic) != file_magic {
+	magic := reader.ReadStr()
+	if string(magic) != fileMagic {
 		return nil, MissingFileMagicError
 	}
 

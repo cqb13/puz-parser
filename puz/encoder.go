@@ -58,7 +58,7 @@ func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	// placeholder for file checksum, computed and inserted later
 	writer.WritePlaceholder(2)
 
-	writer.WriteString(file_magic)
+	writer.WriteString(fileMagic)
 
 	// placeholder for cib, maskedLow, and maskedHigh checksums, computed and inserted later
 	writer.WritePlaceholder(10)
