@@ -5,6 +5,7 @@ import (
 	"slices"
 )
 
+// TODO: make name formatting consistent
 const file_magic string = "ACROSS&DOWN"
 const default_version string = "1.4\x00"
 const SOLID_SQUARE byte = '.'
@@ -61,6 +62,7 @@ func (s ExtraSection) String() string {
 	return sectionStrMap[s]
 }
 
+// MarkupSquare represents formatting that can be added to a Cell
 type MarkupSquare byte
 
 const (
@@ -72,18 +74,18 @@ const (
 )
 
 type Puzzle struct {
-	Title         string
-	Author        string
-	Copyright     string
-	Notes         string
-	version       string
-	Board         Board
-	expectedClues uint16
-	clues         Clues
-	Extras        extraSections
-	PuzzleType    PuzzleType
-	scramble      scrambleData
-	UnusedData    unused
+	Title         string        // The title of the crossword
+	Author        string        // The authors of the crossword
+	Copyright     string        // The copyright information for the crossword
+	Notes         string        // Additional notes for the crossword
+	version       string        // The puz format version
+	Board         Board         // The crossword grid, contains answers and game state and other formatting
+	expectedClues uint16        // The expected number of clues
+	clues         Clues         // The clues for the crossword
+	Extras        extraSections // Optional extra sections, RebusTable, Timer, and UserRebusTable
+	PuzzleType    PuzzleType    // The puzzle type, either Normal or Diagramless
+	scramble      scrambleData  // Contains information about the puzzles scramble
+	UnusedData    unused        // Contains unused bytes from the puz format along with additional data from before and after the puz data
 }
 
 // NewPuzzle creates a new puzzle with an empty board
@@ -142,14 +144,17 @@ func (p *Puzzle) SetVersion(version string) error {
 	return nil
 }
 
+// Version returns the file version
 func (p *Puzzle) Version() string {
 	return p.version[:3]
 }
 
+// Clues returns the crossword clues
 func (p *Puzzle) Clues() Clues {
 	return p.clues
 }
 
+// SetClues overrides all of the crossword clues with the provided clues
 func (p *Puzzle) SetClues(clues Clues) {
 	p.clues = clues
 	p.expectedClues = uint16(len(clues))
@@ -350,13 +355,14 @@ func (c Clues) Sort() {
 }
 
 type Clue struct {
-	Clue      string
-	Num       int
-	StartX    int
-	StartY    int
-	Direction Direction
+	Clue      string    // The clue itself
+	Num       int       // The number associating the clue with a word
+	StartX    int       // The X position of the start of the word in the board
+	StartY    int       // The Y position of the start of the word in the board
+	Direction Direction // The direction of the word
 }
 
+// NewClue returns a Clue initialized with the given clue text, number, position (x, y), and direction.
 func NewClue(clue string, num int, x int, y int, dir Direction) Clue {
 	return Clue{
 		clue,
@@ -368,31 +374,31 @@ func NewClue(clue string, num int, x int, y int, dir Direction) Clue {
 }
 
 type extraSections struct {
-	extraSectionOrder []ExtraSection
-	RebusTable        []RebusEntry
-	Timer             TimerData
-	UserRebusTable    []RebusEntry
+	extraSectionOrder []ExtraSection // The order to write extra sections when encoding
+	RebusTable        []RebusEntry   // The rebus table
+	Timer             TimerData      // The state of the timer
+	UserRebusTable    []RebusEntry   // The rebus table guessed by the player
 }
 
 // TODO: add methods to add rebus entries to board
 type RebusEntry struct {
-	Key   int
-	Value string
+	Key   int    // Key links the entry to a cell on the board
+	Value string // The value
 }
 
 type TimerData struct {
-	SecondsPassed int
-	Running       bool
+	SecondsPassed int  // The number of seconds passed in the game
+	Running       bool // Whether or not the timer is running
 }
 
 type scrambleData struct {
-	scrambledTag      uint16
-	scrambledChecksum uint16
+	scrambledTag      uint16 // Indicates weather or not the crossword board is scrambled
+	scrambledChecksum uint16 // The checksum for the unscrambled grid
 }
 
 type unused struct {
-	reserved1  []byte
-	reserved2  []byte
-	Preamble   []byte
-	Postscript []byte
+	reserved1  []byte // The first reserved section, found in the puz header
+	reserved2  []byte // The second reserved section, found in the puz header
+	Preamble   []byte // Any data from before the start of the puz header
+	Postscript []byte // Any data from after the expected end of puz data
 }

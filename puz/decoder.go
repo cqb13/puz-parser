@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Parse .puz file data from bytes and return Puzzle
+// DecodePuz parses .puz file data from bytes and returns Puzzle
 func DecodePuz(bytes []byte) (*Puzzle, error) {
 	var puzzle Puzzle
 

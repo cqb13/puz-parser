@@ -2,6 +2,7 @@ package puz
 
 import "fmt"
 
+// EncodePuz encodes the data in puzzle to bytes that can be saved as a .puz file
 func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer := newPuzzleWriter()
 
