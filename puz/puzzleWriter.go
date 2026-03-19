@@ -42,8 +42,8 @@ func (w *puzzleWriter) WriteShort(short uint16) {
 	w.buffer.Write(b)
 }
 
-func (w *puzzleWriter) WriteByte(b byte) {
-	w.buffer.WriteByte(b)
+func (w *puzzleWriter) WriteByte(b byte) error {
+	return w.buffer.WriteByte(b)
 }
 
 func (w *puzzleWriter) Bytes() []byte {
