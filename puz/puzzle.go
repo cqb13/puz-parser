@@ -248,8 +248,6 @@ func (p *Puzzle) ExpectedClues() int {
 	return int(p.expectedClues)
 }
 
-//TODO: add docs explaining that even if data is set in extra sections, if they are not explicitly added to the list the section will not be encoded into a puzzle
-
 // AddExtraSection appends the given section to the list of included extra sections if it isn't already included.
 func (p *Puzzle) AddExtraSection(section ExtraSection) bool {
 	if p.HasExtraSection(section) {
