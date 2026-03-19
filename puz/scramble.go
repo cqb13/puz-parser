@@ -5,18 +5,19 @@ import (
 	"strings"
 )
 
-// a-z and A-Z
+// isLetter reports if char is either a-z or A-Z.
 func isLetter(char byte) bool {
-	if (char >= 0x41 && char <= 0x5A) || (char >= 0x61 && char <= 0x7A) {
+	if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') {
 		return true
 	}
 
 	return false
 }
 
-// createScramble converts a puzzles board into a string used in the scrambling/unscrambling algorithm
-// TODO: explain process
-// TODO: Explain error
+// createScramble converts the crossword board into a string used in the scrambling/unscrambling algorithm.
+//
+// The string is formed by starting in the top left corner of the board and traversing down each column adding each letter and skipping any solid squares.
+// returns NonLetterCharactersInScrambleError if the board contains a non letter character.
 func createScramble(puzzle *Puzzle) (string, error) {
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()
@@ -39,6 +40,7 @@ func createScramble(puzzle *Puzzle) (string, error) {
 	return scramble.String(), nil
 }
 
+// updatePuzzleSolution takes in the string used in scrambling process and puts the letters back in the board in the appropriate places.
 func updatePuzzleSolution(puzzle *Puzzle, newSol string) {
 	height := puzzle.Board.Height()
 	width := puzzle.Board.Width()
@@ -54,6 +56,10 @@ func updatePuzzleSolution(puzzle *Puzzle, newSol string) {
 	}
 }
 
+// keyToBytes returns an array of 4 bytes where each byte is a digit in the key.
+//
+// returns InvalidKeyLengthError if the key is less than 1000 or more than 9999.
+// returns InvalidDigitInKeyError if the key contains a 0.
 func keyToBytes(key int) ([]byte, error) {
 	if key < 1000 || key > 9999 {
 		return nil, InvalidKeyLengthError
@@ -71,6 +77,9 @@ func keyToBytes(key int) ([]byte, error) {
 	return keyBytes, nil
 }
 
+// scramble scrambles a crosswords answer board.
+//
+// returns TooFewCharactersToScrambleError if the board has less than 12 characters. Also fails if the key is invalid or non letter characters are found in the board.
 func scramble(puzzle *Puzzle, key int) error {
 	keyDigits, err := keyToBytes(key)
 	if err != nil {
@@ -112,10 +121,12 @@ func scramble(puzzle *Puzzle, key int) error {
 	return nil
 }
 
+// TODO: doc this
 func shiftString(unscrambled string, num int) string {
 	return unscrambled[num:] + unscrambled[:num]
 }
 
+// TODO: doc this
 func scrambleString(unscrambled string) string {
 	mid := len(unscrambled) / 2
 	front := unscrambled[:mid]
@@ -134,6 +145,9 @@ func scrambleString(unscrambled string) string {
 	return scrambled.String()
 }
 
+// unscramble unscrambles a crosswords board.
+//
+// returns TooFewCharactersToUncrambleError if the board has less than 12 characters. Also fails if the key is invalid or non letter characters are found in the board.
 func unscramble(puzzle *Puzzle, key int) error {
 	keyDigits, err := keyToBytes(key)
 	if err != nil {
@@ -177,6 +191,7 @@ func unscramble(puzzle *Puzzle, key int) error {
 	return nil
 }
 
+// TODO: doc this
 func unscrambleString(scrambled string) string {
 	scrambledLen := len(scrambled)
 	mid := scrambledLen / 2
@@ -198,6 +213,7 @@ func unscrambleString(scrambled string) string {
 	return string(front) + string(back)
 }
 
+// TODO: doc this
 func unshiftString(s string, num int) string {
 	num = num % len(s)
 	return s[len(s)-num:] + s[:len(s)-num]
