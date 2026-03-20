@@ -9,21 +9,17 @@ A PUZ file decoder and encoder based on the format specified [here](https://code
 - Unscrambles and Re-scrambles PUZ files
 - Preserves all data
 
-## TODO
-
-- Docs
-
 ## Installation
 
 ```sh
-go get github.com/cqb13/puz-parser/puz
+go get github.com/cqb13/puz-parser
 ```
 
 ## Basic Usage
 
 ```go
 import (
-    "github.com/cqb13/puz-parser/puz"
+    puz "github.com/cqb13/puz-parser"
 )
 
 func main() {
