@@ -1,22 +1,22 @@
-package tests
+package puz_test
 
 import (
 	"fmt"
-	"io"
 	"os"
+	"path/filepath"
 	"strings"
+	"testing"
 )
 
-const testFilesDir = "./test-files/"
+func loadFile(t *testing.T, name string) []byte {
+	t.Helper()
 
-func loadFile(name string) ([]byte, error) {
-	fp, err := os.Open(testFilesDir + name)
+	data, err := os.ReadFile(filepath.Join("testdata", name))
 	if err != nil {
-		return nil, err
+		t.Fatalf("failed to load %s: %v", name, err)
 	}
-	defer fp.Close()
 
-	return io.ReadAll(fp)
+	return data
 }
 
 func buildHex(b []byte) string {
@@ -26,11 +26,9 @@ func buildHex(b []byte) string {
 		if i > 0 && i%16 == 0 {
 			out.WriteString("\n")
 		}
-
 		if i%8 == 0 && i%16 != 0 {
 			out.WriteString(" ")
 		}
-
 		fmt.Fprintf(&out, "%02x ", v)
 	}
 

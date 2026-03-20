@@ -10,7 +10,7 @@ var (
 	OutOfBoundsWriteError              = errors.New("Out of bounds write")
 	UnreadableDataError                = errors.New("Data does not appear to represent a crossword puzzle")
 	MissingFileMagicError              = errors.New("Failed to find ACROSS&DOWN string in file")
-	UknownExtraSectionNameError        = errors.New("Unknown extra section name")
+	UnkownExtraSectionNameError        = errors.New("Unknown extra section name")
 	MissingExtraSectionError           = errors.New("An extra section was expected but not found")
 	BoardWidthMismatchError            = errors.New("Board contains rows of unequal width")
 	PuzzleIsUnscrambledError           = errors.New("Puzzle is already unscrambled")

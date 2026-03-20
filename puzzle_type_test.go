@@ -1,17 +1,13 @@
-package tests
+package puz_test
 
 import (
+	puz "github.com/cqb13/puz-parser"
 	"testing"
-
-	"github.com/cqb13/puz-parser/puz"
 )
 
 func TestDiagramlessPuzzle(t *testing.T) {
 	name := "NYT-Diagramless.puz"
-	data, err := loadFile(name)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", name, err)
-	}
+	data := loadFile(t, name)
 
 	puzzle, err := puz.DecodePuz(data)
 	if err != nil {
@@ -25,10 +21,7 @@ func TestDiagramlessPuzzle(t *testing.T) {
 
 func TestNormalPuzzle(t *testing.T) {
 	name := "Crossword.puz"
-	data, err := loadFile(name)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", name, err)
-	}
+	data := loadFile(t, name)
 
 	puzzle, err := puz.DecodePuz(data)
 	if err != nil {

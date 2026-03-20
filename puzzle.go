@@ -132,9 +132,9 @@ func NewPuzzleFromBoard(board Board) *Puzzle {
 // The default version for new crosswords is 1.4, other notable versions are 1.2 which means a puzzle will not include the notes section in checksums, along with 2.0 which allows for non ASCII characters to be included.
 // Returns ErrInvalidVersionFormat if the version is not 3 characters long or the middle character is not a '.'.
 func (p *Puzzle) SetVersion(version string) error {
-	bytes := []byte(version)
+	data := []byte(version)
 
-	if len(version) != 3 || bytes[1] != '.' {
+	if len(version) != 3 || data[1] != '.' {
 		return InvalidVersionFormatError
 	}
 

@@ -1,12 +1,16 @@
 package puz
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+)
 
 // EncodePuz encodes the data in puzzle to bytes that can be saved as a .puz file
 func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 	writer := newPuzzleWriter()
 
-	writer.WriteBytes(puzzle.UnusedData.Preamble)
+	writer.writeBytes(puzzle.UnusedData.Preamble)
 
 	err := encodeHeader(puzzle, writer)
 	if err != nil {
@@ -25,52 +29,122 @@ func EncodePuz(puzzle *Puzzle) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to encode extra sections: %w", err)
 	}
 
-	writer.WriteBytes(puzzle.UnusedData.Postscript)
+	writer.writeBytes(puzzle.UnusedData.Postscript)
 
-	bodyBytes := writer.Bytes()[len(puzzle.UnusedData.Preamble) : len(writer.Bytes())-len(puzzle.UnusedData.Postscript)]
+	bodyBytes := writer.bytes()[len(puzzle.UnusedData.Preamble) : len(writer.bytes())-len(puzzle.UnusedData.Postscript)]
 	computedChecksums := computeChecksums(bodyBytes, puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes, puzzle.version)
 
 	preambleOffset := len(puzzle.UnusedData.Preamble)
-	err = writer.OverwriteShort(preambleOffset+0, computedChecksums.checksum)
+	err = writer.overwriteShort(preambleOffset+0, computedChecksums.checksum)
 	if err != nil {
 		return nil, err
 	}
 
-	err = writer.OverwriteShort(preambleOffset+14, computedChecksums.cibChecksum)
+	err = writer.overwriteShort(preambleOffset+14, computedChecksums.cibChecksum)
 	if err != nil {
 		return nil, err
 	}
 
-	err = writer.OverWrite(preambleOffset+16, computedChecksums.maskedLowChecksum[:])
+	err = writer.overwrite(preambleOffset+16, computedChecksums.maskedLowChecksum[:])
 	if err != nil {
 		return nil, err
 	}
 
-	err = writer.OverWrite(preambleOffset+20, computedChecksums.maskedHighChecksum[:])
+	err = writer.overwrite(preambleOffset+20, computedChecksums.maskedHighChecksum[:])
 	if err != nil {
 		return nil, err
 	}
 
-	return writer.Bytes(), nil
+	return writer.bytes(), nil
+}
+
+type puzzleWriter struct {
+	buffer bytes.Buffer
+}
+
+func newPuzzleWriter() *puzzleWriter {
+	return &puzzleWriter{
+		bytes.Buffer{},
+	}
+}
+
+func (w *puzzleWriter) writeString(str string) {
+	w.buffer.WriteString(str)
+	w.buffer.WriteByte(0x00)
+}
+
+func (w *puzzleWriter) writePlaceholder(amount int) {
+	b := make([]byte, amount)
+
+	for i := range b {
+		b[i] = 0x00
+	}
+
+	w.buffer.Write(b)
+}
+
+func (w *puzzleWriter) writeBytes(bytes []byte) {
+	w.buffer.Write(bytes)
+}
+
+func (w *puzzleWriter) writeShort(short uint16) {
+	b := make([]byte, 2)
+
+	binary.LittleEndian.PutUint16(b, short)
+
+	w.buffer.Write(b)
+}
+
+func (w *puzzleWriter) writeByte(b byte) error {
+	return w.buffer.WriteByte(b)
+}
+
+func (w *puzzleWriter) bytes() []byte {
+	return w.buffer.Bytes()
+}
+
+func (w *puzzleWriter) overwrite(offset int, newBytes []byte) error {
+	data := w.buffer.Bytes()
+
+	if offset < 0 || offset > len(data) || offset+len(newBytes) > len(data) {
+		return OutOfBoundsWriteError
+	}
+
+	copy(data[offset:], newBytes)
+
+	return nil
+}
+
+func (w *puzzleWriter) overwriteShort(offset int, short uint16) error {
+	b := make([]byte, 2)
+
+	binary.LittleEndian.PutUint16(b, short)
+
+	err := w.overwrite(offset, b)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func encodeHeader(puzzle *Puzzle, writer *puzzleWriter) error {
 	// placeholder for file checksum, computed and inserted later
-	writer.WritePlaceholder(2)
+	writer.writePlaceholder(2)
 
-	writer.WriteString(fileMagic)
+	writer.writeString(fileMagic)
 
 	// placeholder for cib, maskedLow, and maskedHigh checksums, computed and inserted later
-	writer.WritePlaceholder(10)
-	writer.WriteBytes([]byte(puzzle.version)) // not using write str because it already has the null terminator
-	writer.WriteBytes(puzzle.UnusedData.reserved1)
-	writer.WriteShort(puzzle.scramble.scrambledChecksum)
-	writer.WriteBytes(puzzle.UnusedData.reserved2)
-	writer.WriteByte(byte(puzzle.Board.Width()))
-	writer.WriteByte(byte(puzzle.Board.Height()))
-	writer.WriteShort(uint16(len(puzzle.clues)))
-	writer.WriteShort(uint16(puzzle.PuzzleType))
-	writer.WriteShort(puzzle.scramble.scrambledTag)
+	writer.writePlaceholder(10)
+	writer.writeBytes([]byte(puzzle.version)) // not using write str because it already has the null terminator
+	writer.writeBytes(puzzle.UnusedData.reserved1)
+	writer.writeShort(puzzle.scramble.scrambledChecksum)
+	writer.writeBytes(puzzle.UnusedData.reserved2)
+	writer.writeByte(byte(puzzle.Board.Width()))
+	writer.writeByte(byte(puzzle.Board.Height()))
+	writer.writeShort(uint16(len(puzzle.clues)))
+	writer.writeShort(uint16(puzzle.PuzzleType))
+	writer.writeShort(puzzle.scramble.scrambledTag)
 
 	return nil
 }
@@ -90,8 +164,8 @@ func encodeSolutionAndState(puzzle *Puzzle, writer *puzzleWriter) {
 		}
 	}
 
-	writer.WriteBytes(solution)
-	writer.WriteBytes(state)
+	writer.writeBytes(solution)
+	writer.writeBytes(state)
 }
 
 func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
@@ -102,13 +176,13 @@ func encodeStringsSection(puzzle *Puzzle, writer *puzzleWriter) error {
 		}
 	}
 
-	writer.WriteString(puzzle.Title)
-	writer.WriteString(puzzle.Author)
-	writer.WriteString(puzzle.Copyright)
+	writer.writeString(puzzle.Title)
+	writer.writeString(puzzle.Author)
+	writer.writeString(puzzle.Copyright)
 	for _, clue := range puzzle.clues {
-		writer.WriteString(clue.Clue)
+		writer.writeString(clue.Clue)
 	}
-	writer.WriteString(puzzle.Notes)
+	writer.writeString(puzzle.Notes)
 
 	return nil
 }
@@ -177,11 +251,11 @@ func encodeExtraSections(puzzle *Puzzle, writer *puzzleWriter) error {
 		sectionLength := uint16(len(data))
 		checksum := checksumRegion(data, 0x00)
 
-		writer.WriteBytes([]byte(section.String()))
-		writer.WriteShort(sectionLength)
-		writer.WriteShort(checksum)
-		writer.WriteBytes(data)
-		writer.WriteByte(0x00)
+		writer.writeBytes([]byte(section.String()))
+		writer.writeShort(sectionLength)
+		writer.writeShort(checksum)
+		writer.writeBytes(data)
+		writer.writeByte(0x00)
 	}
 
 	return nil

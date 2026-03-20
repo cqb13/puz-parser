@@ -7,25 +7,25 @@ type checksums struct {
 	maskedHighChecksum [4]byte
 }
 
-func computeChecksums(bytes []byte, size int, title string, author string, copyright string, clues []Clue, notes string, version string) *checksums {
+func computeChecksums(data []byte, size int, title string, author string, copyright string, clues []Clue, notes string, version string) *checksums {
 	//cib checksum
-	computedCibChecksum := checksumRegion(bytes[44:52], 0)
+	computedCibChecksum := checksumRegion(data[44:52], 0)
 
 	// primary checksum
 	computedChecksum := computedCibChecksum
 	offset := 52
-	computedChecksum = checksumRegion(bytes[offset:offset+size], computedChecksum)
+	computedChecksum = checksumRegion(data[offset:offset+size], computedChecksum)
 	offset += size
-	computedChecksum = checksumRegion(bytes[offset:offset+size], computedChecksum)
+	computedChecksum = checksumRegion(data[offset:offset+size], computedChecksum)
 
 	computedChecksum = checksumStrings(title, author, copyright, clues, notes, computedChecksum, version)
 
 	// masked checksum
-	checksumCIB := checksumRegion(bytes[44:52], 0x0000)
+	checksumCIB := checksumRegion(data[44:52], 0x0000)
 	offset = 52
-	solutionChecksum := checksumRegion(bytes[offset:offset+size], 0x0000)
+	solutionChecksum := checksumRegion(data[offset:offset+size], 0x0000)
 	offset += size
-	stateChecksum := checksumRegion(bytes[offset:offset+size], 0x0000)
+	stateChecksum := checksumRegion(data[offset:offset+size], 0x0000)
 
 	stringsChecksum := checksumStrings(title, author, copyright, clues, notes, 0x0000, version)
 

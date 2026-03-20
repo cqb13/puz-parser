@@ -1,18 +1,14 @@
-package tests
+package puz_test
 
 import (
+	puz "github.com/cqb13/puz-parser"
 	"slices"
 	"testing"
-
-	"github.com/cqb13/puz-parser/puz"
 )
 
 func TestGRBSandRTBL(t *testing.T) {
 	name := "Crossword-EXT-Rebus.puz"
-	data, err := loadFile(name)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", name, err)
-	}
+	data := loadFile(t, name)
 
 	puzzle, err := puz.DecodePuz(data)
 	if err != nil {
@@ -47,10 +43,7 @@ func TestAllSections(t *testing.T) {
 	}
 
 	for _, name := range puzzles {
-		data, err := loadFile(name)
-		if err != nil {
-			t.Fatalf("Failed to load %s: %v", name, err)
-		}
+		data := loadFile(t, name)
 
 		puzzle, err := puz.DecodePuz(data)
 		if err != nil {
@@ -81,10 +74,7 @@ func TestAllSections(t *testing.T) {
 
 func TestAddingAndRemoving(t *testing.T) {
 	name := "Crossword-EXT-Rebus.puz"
-	data, err := loadFile(name)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", name, err)
-	}
+	data := loadFile(t, name)
 
 	puzzle, err := puz.DecodePuz(data)
 	if err != nil {
@@ -119,15 +109,9 @@ func TestExtraSectionSorting(t *testing.T) {
 	sortedName := "All-Sections-Sorted.puz"
 	unsortedName := "All-Sections-Unsorted.puz"
 
-	sortedData, err := loadFile(sortedName)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", sortedName, err)
-	}
+	sortedData := loadFile(t, sortedName)
 
-	unsortedData, err := loadFile(unsortedName)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", unsortedName, err)
-	}
+	unsortedData := loadFile(t, unsortedName)
 
 	if slices.Compare(sortedData, unsortedData) == 0 {
 		t.Fatalf("Sorted and unsorted section puzzles were the same")

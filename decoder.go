@@ -1,6 +1,7 @@
 package puz
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -9,17 +10,19 @@ import (
 	"strings"
 )
 
+const headerSize = 52 // Header size in bytes
+
 // DecodePuz parses .puz file data from bytes and returns Puzzle
-func DecodePuz(bytes []byte) (*Puzzle, error) {
+func DecodePuz(data []byte) (*Puzzle, error) {
 	var puzzle Puzzle
 
-	reader := newPuzzleReader(bytes)
+	reader := newPuzzleReader(data)
 
-	fileMagicIndex := reader.Index([]byte(fileMagic))
+	fileMagicIndex := reader.index([]byte(fileMagic))
 	if fileMagicIndex == -1 {
 		return nil, MissingFileMagicError
 	}
-	preamble, err := reader.Read(fileMagicIndex - 2)
+	preamble, err := reader.read(fileMagicIndex - 2)
 	puzzle.UnusedData.Preamble = preamble
 
 	foundChecksums, err := parseHeader(&reader, &puzzle)
@@ -39,7 +42,7 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 
 	for range 5 {
 		err = parseExtraSection(&reader, &puzzle)
-		if errors.Is(err, UknownExtraSectionNameError) {
+		if errors.Is(err, UnkownExtraSectionNameError) {
 			break
 		}
 
@@ -49,119 +52,174 @@ func DecodePuz(bytes []byte) (*Puzzle, error) {
 		}
 	}
 
-	postscript := reader.ReadRemaining()
+	postscript := reader.readRemaining()
 	puzzle.UnusedData.Postscript = postscript
 
-	// bytes[len(preamble):len(reader.bytes)-len(postscript)] to ensure only the actual data is checksummed
-	computedChecksums := computeChecksums(bytes[len(preamble):len(reader.bytes)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes, puzzle.version)
+	// to ensure only the actual data is checksummed
+	computedChecksums := computeChecksums(data[len(preamble):len(reader.data)-len(postscript)], puzzle.Board.Width()*puzzle.Board.Height(), puzzle.Title, puzzle.Author, puzzle.Copyright, puzzle.clues, puzzle.Notes, puzzle.version)
 
-	if foundChecksums.cibChecksum != computedChecksums.cibChecksum {
-		return nil, &ChecksumMismatchError{
-			int(foundChecksums.cibChecksum),
-			int(computedChecksums.cibChecksum),
-			cibChecksum,
-		}
-	}
-
-	if foundChecksums.checksum != computedChecksums.checksum {
-		return nil, &ChecksumMismatchError{
-			int(foundChecksums.checksum),
-			int(computedChecksums.checksum),
-			globalChecksum,
-		}
-	}
-
-	if foundChecksums.maskedLowChecksum != computedChecksums.maskedLowChecksum {
-		return nil, &ChecksumMismatchError{
-			int(binary.LittleEndian.Uint32(foundChecksums.maskedLowChecksum[:])),
-			int(binary.LittleEndian.Uint32(computedChecksums.maskedLowChecksum[:])),
-			maskedLowChecksum,
-		}
-	}
-
-	if foundChecksums.maskedHighChecksum != computedChecksums.maskedHighChecksum {
-		return nil, &ChecksumMismatchError{
-			int(binary.LittleEndian.Uint32(foundChecksums.maskedHighChecksum[:])),
-			int(binary.LittleEndian.Uint32(computedChecksums.maskedHighChecksum[:])),
-			maskedHighChecksum,
-		}
+	err = validateChecksums(foundChecksums, computedChecksums)
+	if err != nil {
+		return nil, err
 	}
 
 	return &puzzle, nil
 }
 
+type puzzleReader struct {
+	data   []byte
+	offset int
+}
+
+func newPuzzleReader(data []byte) puzzleReader {
+	return puzzleReader{
+		data,
+		0,
+	}
+}
+
+func (r *puzzleReader) canRead(amount int) bool {
+	return r.offset+amount <= len(r.data)
+}
+
+func (r *puzzleReader) read(amount int) ([]byte, error) {
+	if !r.canRead(amount) {
+		return nil, OutOfBoundsReadError
+	}
+
+	start := r.offset
+	r.offset += amount
+	return r.data[start:r.offset], nil
+}
+
+func (r *puzzleReader) peek(amount int) ([]byte, error) {
+	if !r.canRead(amount) {
+		return nil, OutOfBoundsReadError
+	}
+
+	start := r.offset
+	return r.data[start : r.offset+amount], nil
+}
+
+func (r *puzzleReader) readStr() string {
+	var data []byte
+
+	for i := r.offset; i < len(r.data) && r.data[i] != 0x00; i++ {
+		data = append(data, r.data[i])
+		r.offset++
+	}
+
+	r.offset++
+
+	return string(data)
+}
+
+func (r *puzzleReader) index(target []byte) int {
+	index := bytes.Index(r.data, target)
+
+	return index
+}
+
+func (r *puzzleReader) readByte() (byte, error) {
+	b, err := r.read(1)
+	if err != nil {
+		return 0, err
+	}
+	return b[0], nil
+}
+
+func (r *puzzleReader) len() int {
+	return len(r.data)
+}
+
+func (r *puzzleReader) readShort() (uint16, error) {
+	b, err := r.read(2)
+	if err != nil {
+		return 0, err
+	}
+	return parseShort(b), nil
+}
+
+func (r *puzzleReader) readRemaining() []byte {
+	return r.data[r.offset:len(r.data)]
+}
+
+func parseShort(data []byte) uint16 {
+	return binary.LittleEndian.Uint16(data)
+}
+
 func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
-	if reader.Len() < 52 {
+	if reader.len() < headerSize {
 		return nil, UnreadableDataError
 	}
 
-	checksum, err := reader.ReadShort()
+	checksum, err := reader.readShort()
 	if err != nil {
 		return nil, err
 	}
-	magic := reader.ReadStr()
+	magic := reader.readStr()
 	if string(magic) != fileMagic {
 		return nil, MissingFileMagicError
 	}
 
-	cibChecksum, err := reader.ReadShort()
+	cibChecksum, err := reader.readShort()
 	if err != nil {
 		return nil, err
 	}
 
-	maskedLowChecksum, err := reader.Read(4)
+	maskedLowChecksum, err := reader.read(4)
 	if err != nil {
 		return nil, err
 	}
-	maskedHighChecksum, err := reader.Read(4)
+	maskedHighChecksum, err := reader.read(4)
 	if err != nil {
 		return nil, err
 	}
 
-	version, err := reader.Read(4)
+	version, err := reader.read(4)
 	if err != nil {
 		return nil, err
 	}
 	puzzle.version = string(version)
 
 	// not used in most files
-	reserved1, err := reader.Read(2)
+	reserved1, err := reader.read(2)
 	if err != nil {
 		return nil, err
 	}
 	puzzle.UnusedData.reserved1 = reserved1
 
-	scrambledChecksum, err := reader.ReadShort()
+	scrambledChecksum, err := reader.readShort()
 	if err != nil {
 		return nil, err
 	}
 	puzzle.scramble.scrambledChecksum = scrambledChecksum
 
 	// not used in most files
-	reserved2, err := reader.Read(12)
+	reserved2, err := reader.read(12)
 	if err != nil {
 		return nil, err
 	}
 	puzzle.UnusedData.reserved2 = reserved2
 
-	width, err := reader.ReadByte()
+	width, err := reader.readByte()
 	if err != nil {
 		return nil, err
 	}
-	height, err := reader.ReadByte()
+	height, err := reader.readByte()
 	if err != nil {
 		return nil, err
 	}
 
 	puzzle.Board = NewBoard(width, height)
 
-	clueCount, err := reader.ReadShort()
+	clueCount, err := reader.readShort()
 	if err != nil {
 		return nil, err
 	}
 	puzzle.expectedClues = clueCount
 
-	bitmask, err := reader.ReadShort()
+	bitmask, err := reader.readShort()
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +229,7 @@ func parseHeader(reader *puzzleReader, puzzle *Puzzle) (*checksums, error) {
 		puzzle.PuzzleType = Normal
 	}
 
-	scrambledTag, err := reader.ReadShort()
+	scrambledTag, err := reader.readShort()
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +252,7 @@ func parseSolutionAndState(reader *puzzleReader, puzzle *Puzzle) error {
 
 	expectedLen := reader.offset + size*2
 
-	if expectedLen > reader.Len() {
+	if expectedLen > reader.len() {
 		return UnreadableDataError
 	}
 
@@ -219,32 +277,31 @@ func parseSolutionAndState(reader *puzzleReader, puzzle *Puzzle) error {
 }
 
 func parseBoard(reader *puzzleReader, width int, height int) ([][]byte, error) {
-	var board [][]byte
+	board := make([][]byte, height)
 
-	for range height {
-		bytes, err := reader.Read(width)
+	for y := range height {
+		row, err := reader.read(width)
 		if err != nil {
 			return nil, err
 		}
-
-		board = append(board, bytes)
+		board[y] = row
 	}
 
 	return board, nil
 }
 
 func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
-	title := reader.ReadStr()
+	title := reader.readStr()
 	puzzle.Title = title
-	author := reader.ReadStr()
+	author := reader.readStr()
 	puzzle.Author = author
-	copyright := reader.ReadStr()
+	copyright := reader.readStr()
 	puzzle.Copyright = copyright
 
 	var clues []string
 
 	for range puzzle.expectedClues {
-		clue := reader.ReadStr()
+		clue := reader.readStr()
 		clues = append(clues, clue)
 	}
 
@@ -257,7 +314,7 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 
 	puzzle.clues = make([]Clue, puzzle.expectedClues)
 
-	notes := reader.ReadStr()
+	notes := reader.readStr()
 	puzzle.Notes = notes
 
 	if puzzle.expectedClues == 0 {
@@ -305,31 +362,31 @@ func parseStringsSection(reader *puzzleReader, puzzle *Puzzle) error {
 }
 
 func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
-	sectionName, err := reader.Peek(4)
+	sectionName, err := reader.peek(4)
 	if err != nil {
-		return UknownExtraSectionNameError
+		return UnkownExtraSectionNameError
 	}
 
 	section, ok := getSectionFromString(string(sectionName))
 	if !ok {
-		return UknownExtraSectionNameError
+		return UnkownExtraSectionNameError
 	}
 
-	// just for shifting offset on valid section name
-	reader.Read(4)
+	// because of peek, if we here there is data so no err check needed, just for shifting offset on valid section name
+	reader.read(4)
 
 	// length does not include null terminator
-	length, err := reader.ReadShort()
+	length, err := reader.readShort()
 	if err != nil {
 		return err
 	}
 
-	checksum, err := reader.ReadShort()
+	checksum, err := reader.readShort()
 	if err != nil {
 		return err
 	}
 
-	data, err := reader.Read(int(length))
+	data, err := reader.read(int(length))
 
 	computedChecksum := checksumRegion(data, 0x00)
 
@@ -396,33 +453,33 @@ func parseExtraSection(reader *puzzleReader, puzzle *Puzzle) error {
 		puzzle.Extras.UserRebusTable = tbl
 
 	default:
-		return UknownExtraSectionNameError
+		return UnkownExtraSectionNameError
 	}
 
 	// skip null terminator at the end of a section
-	reader.ReadByte()
+	reader.readByte()
 
 	return nil
 }
 
-func parseExtraSectionBoard(bytes []byte, width int, height int) ([][]byte, error) {
+func parseExtraSectionBoard(data []byte, width int, height int) ([][]byte, error) {
 	size := width * height
-	if len(bytes) != size {
+	if len(data) != size {
 		return nil, UnreadableDataError
 	}
 
 	var board [][]byte
 	for i := 0; i < size; i += width {
 		end := i + width
-		board = append(board, bytes[i:end])
+		board = append(board, data[i:end])
 	}
 
 	return board, nil
 }
 
-func parseExtraSectionRebusTbl(bytes []byte) ([]RebusEntry, error) {
+func parseExtraSectionRebusTbl(data []byte) ([]RebusEntry, error) {
 	// last byte is a ; and should be ignored for proper splitting
-	str := string(bytes[:len(bytes)-1])
+	str := string(data[:len(data)-1])
 
 	parts := strings.Split(str, ";")
 
@@ -452,8 +509,8 @@ func parseExtraSectionRebusTbl(bytes []byte) ([]RebusEntry, error) {
 	return entries, nil
 }
 
-func parseExtraTimerSection(bytes []byte) (*TimerData, error) {
-	str := string(bytes)
+func parseExtraTimerSection(data []byte) (*TimerData, error) {
+	str := string(data)
 
 	parts := strings.Split(str, ",")
 	if len(parts) != 2 {
@@ -479,4 +536,40 @@ func parseExtraTimerSection(bytes []byte) (*TimerData, error) {
 		seccondsPassed,
 		running,
 	}, nil
+}
+
+func validateChecksums(found, computed *checksums) error {
+	if found.cibChecksum != computed.cibChecksum {
+		return &ChecksumMismatchError{
+			int(found.cibChecksum),
+			int(computed.cibChecksum),
+			cibChecksum,
+		}
+	}
+
+	if found.checksum != computed.checksum {
+		return &ChecksumMismatchError{
+			int(found.checksum),
+			int(computed.checksum),
+			globalChecksum,
+		}
+	}
+
+	if found.maskedLowChecksum != computed.maskedLowChecksum {
+		return &ChecksumMismatchError{
+			int(binary.LittleEndian.Uint32(found.maskedLowChecksum[:])),
+			int(binary.LittleEndian.Uint32(computed.maskedLowChecksum[:])),
+			maskedLowChecksum,
+		}
+	}
+
+	if found.maskedHighChecksum != computed.maskedHighChecksum {
+		return &ChecksumMismatchError{
+			int(binary.LittleEndian.Uint32(found.maskedHighChecksum[:])),
+			int(binary.LittleEndian.Uint32(computed.maskedHighChecksum[:])),
+			maskedHighChecksum,
+		}
+	}
+
+	return nil
 }

@@ -1,9 +1,8 @@
-package tests
+package puz_test
 
 import (
+	puz "github.com/cqb13/puz-parser"
 	"testing"
-
-	"github.com/cqb13/puz-parser/puz"
 )
 
 type scrambleTestCase struct {
@@ -28,11 +27,7 @@ var testCases = []scrambleTestCase{
 func TestUnscramble(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			decodedBytes, err := loadFile(tc.scrambledFile)
-			if err != nil {
-				t.Fatalf("Failed to load %s: %v", tc.scrambledFile, err)
-			}
-
+			decodedBytes := loadFile(t, tc.scrambledFile)
 			puzzle, err := puz.DecodePuz(decodedBytes)
 			if err != nil {
 				t.Fatalf("Failed to decode %s: %v", tc.scrambledFile, err)
@@ -53,10 +48,7 @@ func TestUnscramble(t *testing.T) {
 			}
 
 			// Compare with original unscrambled puzzle
-			checkBytes, err := loadFile(tc.plainFile)
-			if err != nil {
-				t.Fatalf("Failed to load %s: %v", tc.plainFile, err)
-			}
+			checkBytes := loadFile(t, tc.plainFile)
 
 			checkPuzzle, err := puz.DecodePuz(checkBytes)
 			if err != nil {
@@ -78,10 +70,7 @@ func TestUnscramble(t *testing.T) {
 func TestScramble(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			decodedBytes, err := loadFile(tc.plainFile)
-			if err != nil {
-				t.Fatalf("Failed to load %s: %v", tc.plainFile, err)
-			}
+			decodedBytes := loadFile(t, tc.plainFile)
 
 			puzzle, err := puz.DecodePuz(decodedBytes)
 			if err != nil {
@@ -98,10 +87,7 @@ func TestScramble(t *testing.T) {
 			}
 
 			// Compare with scrambled file
-			checkBytes, err := loadFile(tc.scrambledFile)
-			if err != nil {
-				t.Fatalf("Failed to load %s: %v", tc.scrambledFile, err)
-			}
+			checkBytes := loadFile(t, tc.scrambledFile)
 
 			checkPuzzle, err := puz.DecodePuz(checkBytes)
 			if err != nil {

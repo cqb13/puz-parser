@@ -1,19 +1,15 @@
-package tests
+package puz_test
 
 import (
 	"bytes"
+	puz "github.com/cqb13/puz-parser"
 	"testing"
-
-	"github.com/cqb13/puz-parser/puz"
 )
 
 // ensure data (name, author, notes, version, etc...)  is loaded correctly
 func TestPuzzleLoading(t *testing.T) {
 	name := "Crossword.puz"
-	data, err := loadFile(name)
-	if err != nil {
-		t.Fatalf("Failed to load %s: %v", name, err)
-	}
+	data := loadFile(t, name)
 
 	p, err := puz.DecodePuz(data)
 	if err != nil {

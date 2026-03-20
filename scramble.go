@@ -121,12 +121,10 @@ func scramble(puzzle *Puzzle, key int) error {
 	return nil
 }
 
-// TODO: doc this
 func shiftString(unscrambled string, num int) string {
 	return unscrambled[num:] + unscrambled[:num]
 }
 
-// TODO: doc this
 func scrambleString(unscrambled string) string {
 	mid := len(unscrambled) / 2
 	front := unscrambled[:mid]
@@ -191,7 +189,6 @@ func unscramble(puzzle *Puzzle, key int) error {
 	return nil
 }
 
-// TODO: doc this
 func unscrambleString(scrambled string) string {
 	scrambledLen := len(scrambled)
 	mid := scrambledLen / 2
@@ -213,7 +210,6 @@ func unscrambleString(scrambled string) string {
 	return string(front) + string(back)
 }
 
-// TODO: doc this
 func unshiftString(s string, num int) string {
 	num = num % len(s)
 	return s[len(s)-num:] + s[:len(s)-num]
