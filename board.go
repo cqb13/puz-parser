@@ -187,7 +187,7 @@ func (b Board) StartsDownWord(x int, y int) bool {
 	return false
 }
 
-// GetWords returns a list of Words from the board.
+// GetWords returns a list of all the Words from the board.
 func (b Board) GetWords() []Word {
 	var words []Word
 
@@ -235,4 +235,55 @@ func (b Board) GetWords() []Word {
 	}
 
 	return words
+}
+
+// GetWordsByDirection returns a list of all the Words in the direction from the board.
+func (b Board) GetWordsByDirection(dir Direction) []Word {
+	var words []Word
+	width := b.Width()
+	nextWordNum := 1
+
+	for y := range b.Height() {
+		for x := range width {
+			if b.IsSolidSquare(x, y) {
+				continue
+			}
+
+			startsAcrossWord := b.StartsAcrossWord(x, y)
+			startsDownWord := b.StartsDownWord(x, y)
+
+			if startsAcrossWord && dir == Across {
+				word, ok := b.GetWord(x, y, Across)
+				if ok {
+					words = append(words, Word{
+						word,
+						nextWordNum,
+						x,
+						y,
+						Across,
+					})
+				}
+			}
+
+			if startsDownWord && dir == Down {
+				word, ok := b.GetWord(x, y, Down)
+				if ok {
+					words = append(words, Word{
+						word,
+						nextWordNum,
+						x,
+						y,
+						Down,
+					})
+				}
+			}
+
+			if startsAcrossWord || startsDownWord {
+				nextWordNum++
+			}
+		}
+	}
+
+	return words
+
 }
