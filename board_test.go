@@ -107,6 +107,10 @@ func TestGettingWords(t *testing.T) {
 
 	// ensure the right amount of words are found with the correct directions
 	words := board.GetWords()
+	if len(words) == 0 {
+		t.Fatalf("Expected words on the board, but none were found")
+	}
+
 	if len(words) != 10 {
 		t.Fatalf("Failed to find expected amount of words in %s, expected 10, found %d", name, len(words))
 	}

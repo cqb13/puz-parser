@@ -187,49 +187,43 @@ func (b Board) StartsDownWord(x int, y int) bool {
 	return false
 }
 
-// GetWords returns a list of all the Words from the board.
-func (b Board) GetWords() []Word {
+// extractWords extracts words from the board based on the specified criteria.
+func (b Board) extractWords(dirFilter func(Direction) bool) []Word {
 	var words []Word
-
-	width := b.Width()
 	nextWordNum := 1
-	for y := range b.Height() {
-		for x := range width {
+
+	for y := range b {
+		for x := range b[y] {
 			if b.IsSolidSquare(x, y) {
 				continue
 			}
 
-			startsAcrossWord := b.StartsAcrossWord(x, y)
-			startsDownWord := b.StartsDownWord(x, y)
-
-			if startsAcrossWord {
+			if dirFilter(Across) && b.StartsAcrossWord(x, y) {
 				word, ok := b.GetWord(x, y, Across)
 				if ok {
 					words = append(words, Word{
-						word,
-						nextWordNum,
-						x,
-						y,
-						Across,
+						Word:      word,
+						Num:       nextWordNum,
+						StartX:    x,
+						StartY:    y,
+						Direction: Across,
 					})
+					nextWordNum++
 				}
 			}
 
-			if startsDownWord {
+			if dirFilter(Down) && b.StartsDownWord(x, y) {
 				word, ok := b.GetWord(x, y, Down)
 				if ok {
 					words = append(words, Word{
-						word,
-						nextWordNum,
-						x,
-						y,
-						Down,
+						Word:      word,
+						Num:       nextWordNum,
+						StartX:    x,
+						StartY:    y,
+						Direction: Down,
 					})
+					nextWordNum++
 				}
-			}
-
-			if startsAcrossWord || startsDownWord {
-				nextWordNum++
 			}
 		}
 	}
@@ -237,53 +231,16 @@ func (b Board) GetWords() []Word {
 	return words
 }
 
+// GetWords returns a list of all the Words from the board.
+func (b Board) GetWords() []Word {
+	return b.extractWords(func(dir Direction) bool {
+		return dir == Across || dir == Down
+	})
+}
+
 // GetWordsByDirection returns a list of all the Words in the direction from the board.
 func (b Board) GetWordsByDirection(dir Direction) []Word {
-	var words []Word
-	width := b.Width()
-	nextWordNum := 1
-
-	for y := range b.Height() {
-		for x := range width {
-			if b.IsSolidSquare(x, y) {
-				continue
-			}
-
-			startsAcrossWord := b.StartsAcrossWord(x, y)
-			startsDownWord := b.StartsDownWord(x, y)
-
-			if startsAcrossWord && dir == Across {
-				word, ok := b.GetWord(x, y, Across)
-				if ok {
-					words = append(words, Word{
-						word,
-						nextWordNum,
-						x,
-						y,
-						Across,
-					})
-				}
-			}
-
-			if startsDownWord && dir == Down {
-				word, ok := b.GetWord(x, y, Down)
-				if ok {
-					words = append(words, Word{
-						word,
-						nextWordNum,
-						x,
-						y,
-						Down,
-					})
-				}
-			}
-
-			if startsAcrossWord || startsDownWord {
-				nextWordNum++
-			}
-		}
-	}
-
-	return words
-
+	return b.extractWords(func(d Direction) bool {
+		return d == dir
+	})
 }
